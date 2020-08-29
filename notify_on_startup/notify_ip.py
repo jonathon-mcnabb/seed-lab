@@ -1,20 +1,19 @@
 import smtplib
-import socket
-import fcntl
-import struct
+import os
 
-def get_ip_address(ifname):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(),
-        0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15])
-    )[20:24])
+#'\' is used to splite pythone line
+ipaddress = os.popen("ifconfig wlan0 \
+                     | grep 'inet addr' \
+                     | awk -F: '{print $2}' \
+                     | awk '{print $1}'").read()
+ssid = os.popen("iwconfig wlan0 \
+                | grep 'ESSID' \
+                | awk '{print $4}' \
+                | awk -F\\\" '{print $2}'").read()
 
-print get_ip_address('lo')
-host_ip = get_ip_address('eth0')
-    # Driver code
-
+print("ssid: " + ssid)
+print("ipaddress: " + ipaddress)
+host_ip = ipaddress
 TO = 'EMAIL_SENDING_TO'
 SUBJECT = 'SSH Command'
 TEXT = 'Please run the following command to ssh into the raspberry pi: \n\n' \
