@@ -10,7 +10,7 @@ except:
 
     # Driver code
 
-TO = 'jmcnabb@mymail.mines.edu'
+TO = 'EMAIL_SENDING_TO'
 SUBJECT = 'SSH Command'
 TEXT = 'Please run the following command to ssh into the raspberry pi: \n\n' \
        'ssh pi@' + str(host_ip)
