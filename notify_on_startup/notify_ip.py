@@ -1,13 +1,18 @@
 import smtplib
 import socket
+import fcntl
+import struct
 
-try:
-    host_name = socket.gethostname()
-    host_ip = socket.gethostbyname(host_name)
-    print("IP : ", host_ip)
-except:
-    print("Unable to get Hostname and IP")
+def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15])
+    )[20:24])
 
+print get_ip_address('lo')
+host_ip = get_ip_address('eth0')
     # Driver code
 
 TO = 'EMAIL_SENDING_TO'
