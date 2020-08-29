@@ -3,8 +3,8 @@ import sys
 with open('datafile.txt', 'r') as f:
     b = eval(f.read())
 
-    maxVal = -sys.maxint - 1
-    minVal = sys.maxint
+    maxVal = -sys.maxsize - 1
+    minVal = sys.maxsize
 
     index = -1
 
@@ -41,7 +41,6 @@ with open('datafile.txt', 'r') as f:
         values.append(b[i])
     elif frequency == count:
         values.append(b[i])
-        print values
 
     evens = []
     for i in range(length):

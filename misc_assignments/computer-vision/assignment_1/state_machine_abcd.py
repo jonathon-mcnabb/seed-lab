@@ -32,7 +32,7 @@ def statec(character):
 
 
 def stated(character):
-    print "abcd is contained in the string"
+    print("abcd is contained in the string")
     if character == 'a':
         return statea
     elif character != 'a':
@@ -51,7 +51,7 @@ state_dictionary = {
 state = state0 # initial state as pointer to state0 function
 print("Type any string")
 print("State machine will detect if abcd is contained in the string")
-input_string = raw_input("Enter String: ")
+input_string = input("Enter String: ")
 input_string = list(input_string)
 
 length = len(input_string)
