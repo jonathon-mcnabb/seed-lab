@@ -34,8 +34,8 @@ TEXT = 'Please run the following command to ssh into the raspberry pi: \n\n' \
 
 
 # Gmail Sign In
-gmail_sender = 'jmcnabbdev@gmail.com'
-gmail_passwd = 'Celloforever5!'
+gmail_sender = 'USER'
+gmail_passwd = 'PASS'
 
 server = smtplib.SMTP('smtp.gmail.com', 587)
 server.ehlo()
