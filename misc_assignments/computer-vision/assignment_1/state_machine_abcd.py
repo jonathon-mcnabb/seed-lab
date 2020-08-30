@@ -1,3 +1,10 @@
+
+"""abcd checker
+
+This script allows the user to input a string and will output 
+'abcd is contained in the string' everytime the sequence abcd is found
+
+"""
 # state definition for state0
 def state0(character):
     if character != 'a':
