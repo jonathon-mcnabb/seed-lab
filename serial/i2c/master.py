@@ -1,24 +1,20 @@
-#  i2c_master_pi.py
-#  Connects to Arduino via I2C
-  
-#  DroneBot Workshop 2019
-#  https://dronebotworkshop.com
- 
-from smbus import SMBus
- 
-addr = 0x8 # bus address
-bus = SMBus(1) # indicates /dev/ic2-1
- 
-numb = 1
- 
-print ("Enter 1 for ON or 0 for OFF")
-while numb == 1:
- 
-	ledstate = input(">>>>   ")
- 
-	if ledstate == "1":
-		bus.write_byte(addr, 0x1) # switch it on
-	elif ledstate == "0":
-		bus.write_byte(addr, 0x0) # switch it on
-	else:
-		numb = 0
+raspberry:
+...
+bus = smbus.SMBus(1)
+address = 0x04
+...
+def readNumber():
+        x = []
+        x.append(bus.read_byte_data(address,200))
+        x.append(bus.read_byte_data(address,201))
+        x.append(bus.read_byte_data(address,202))
+        x.append(bus.read_byte_data(address,203))
+        return x
+
+def writeNumber(v1,v2,v3,v4):
+        bus.write_i2c_block_data(address,v1,[v2,v3,v4])
+        return -1
+
+//example:
+writeNumber(0,90,120,180)
+values = readNumber()
