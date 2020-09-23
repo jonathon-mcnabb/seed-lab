@@ -62,10 +62,7 @@ with open('datafile.txt', 'r') as f:
     elif frequency == count:
         values.append(b[i])
 
-    evens = []
-    for i in range(length):
-        if b[i] % 2 == 0:
-            evens.append(b[i])
+    evens = [x for x in b if x % 2 == 0]
 
     print('Max: ' + str(maxVal))
     print('Min: ' + str(minVal))
