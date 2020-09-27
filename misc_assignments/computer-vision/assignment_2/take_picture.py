@@ -54,16 +54,7 @@ if __name__ == '__main__':
     
    # save the image to the disk
    # print("Saving image "+fileName)
-   try:
 
-      cv2.imwrite("test.png", image)
-      cv2.imwrite("small.png", small)
-      
-      
-   except:
-      # print("Couldn't save "+fileName)
-      pass
-    
  
    # display the image on screen and wait for a keypress
    # display the image on screen and wait for a keypress
