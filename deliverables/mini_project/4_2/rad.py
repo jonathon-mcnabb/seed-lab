@@ -84,6 +84,3 @@ def aruco_detection():
             break
         
 aruco_detection()
-
-
-#I HATE GIT
