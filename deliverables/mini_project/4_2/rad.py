@@ -9,7 +9,9 @@ from cv2 import aruco
 def aruco_detection():    
     # start video capture for distance
     cap = cv2.VideoCapture(0)
-
+	
+	prevQuadrant = 0
+	sendStuff = False
     while(True):
         # Capture frame-by-frame
         ret, frame = cap.read()
@@ -56,6 +58,8 @@ def aruco_detection():
             centerY = (centerY1+centerY2) / 2
             
             quadrant = 0
+			
+			
             
             if centerX > absX:
                 if centerY > absY:
@@ -67,10 +71,17 @@ def aruco_detection():
                     quadrant = 1
                 else:
                     quadrant = 3
+			
+			print(quadrant)
+			if quadrant != prevQuadrant:
+				prevQuadrant = quadrant
+				sendStuff = True
                     
             # GREG ADD HERE
             
-            
+			if sendStuff:
+				continue
+				
             
             
             #
