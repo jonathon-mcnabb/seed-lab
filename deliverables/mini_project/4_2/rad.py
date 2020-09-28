@@ -10,8 +10,8 @@ def aruco_detection():
     # start video capture for distance
     cap = cv2.VideoCapture(0)
 	
-	prevQuadrant = 0
-	sendStuff = False
+    prevQuadrant = 0
+    sendStuff = False
     while(True):
         # Capture frame-by-frame
         ret, frame = cap.read()
@@ -58,9 +58,7 @@ def aruco_detection():
             centerY = (centerY1+centerY2) / 2
             
             quadrant = 0
-			
-			
-            
+
             if centerX > absX:
                 if centerY > absY:
                     quadrant = 0
@@ -72,20 +70,15 @@ def aruco_detection():
                 else:
                     quadrant = 3
 			
-			print(quadrant)
-			if quadrant != prevQuadrant:
-				prevQuadrant = quadrant
-				sendStuff = True
-                    
+            print(quadrant)
+            if quadrant != prevQuadrant:
+                prevQuadrant = quadrant
+                sendStuff = True
+
             # GREG ADD HERE
-            
-			if sendStuff:
-				continue
-				
             
             
             #
-
         cv2.imshow('frame',gray)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
