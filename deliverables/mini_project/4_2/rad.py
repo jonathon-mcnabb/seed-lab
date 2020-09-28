@@ -61,14 +61,14 @@ def aruco_detection():
 
             if centerX > absX:
                 if centerY > absY:
-                    quadrant = 0
+                    quadrant = 3
                 else:
-                    quadrant = 4
+                    quadrant = 0
             else:
                 if centerY > absY:
-                    quadrant = 1
+                    quadrant = 2
                 else:
-                    quadrant = 3
+                    quadrant = 1
 			
             print(quadrant)
             if quadrant != prevQuadrant:
