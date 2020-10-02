@@ -82,10 +82,10 @@ def aruco_detection():
                 else:
                     quadrant = 1
 			
-            print(quadrant)
             if quadrant != prevQuadrant:
                 prevQuadrant = quadrant
                 sendStuff = True
+                print(quadrant)
 
             # GREG ADD HERE
             
