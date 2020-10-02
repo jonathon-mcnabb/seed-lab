@@ -36,6 +36,15 @@ def writeNumber(value):
     bus.write_byte(address, value)
     return -1
 
+def white_balance(img):
+    result = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    avg_a = np.average(result[:, :, 1])
+    avg_b = np.average(result[:, :, 2])
+    result[:, :, 1] = result[:, :, 1] - ((avg_a - 128) * (result[:, :, 0] / 255.0) * 1.1)
+    result[:, :, 2] = result[:, :, 2] - ((avg_b - 128) * (result[:, :, 0] / 255.0) * 1.1)
+    result = cv2.cvtColor(result, cv2.COLOR_LAB2BGR)
+    return result
+
 def aruco_detection():    
     # start video capture for distance
     cap = cv2.VideoCapture(0)
@@ -46,7 +55,10 @@ def aruco_detection():
         # Capture frame-by-frame
         ret, frame = cap.read()
         #gray = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        gray = frame
+        gray = white_balance(frame)
+		
+		
+		
         # gray = cv2.flip(gray, 0) 
         aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
         parameters =  aruco.DetectorParameters_create()
