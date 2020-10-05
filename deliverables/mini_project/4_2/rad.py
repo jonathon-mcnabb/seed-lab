@@ -36,7 +36,6 @@ def writeNumber(value):
     bus.write_byte(address, value)
     return -1
 
-# function to auto white balance pixels
 def white_balance(img):
     result = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     avg_a = np.average(result[:, :, 1])
@@ -76,8 +75,7 @@ def aruco_detection():
         height, width, _ = gray.shape
         deltaX = 0
         delyaY = 0
-		
-		# grab middle pixel of screen
+        
         absX = int(width/2)
         absY = int(height/2)
         
@@ -88,13 +86,11 @@ def aruco_detection():
             #print (len(ids))
             markerOne = corners[0][0]
             
-			# find corners
             cornerOne = markerOne[0]
             cornerTwo = markerOne[1]
             cornerThree = markerOne[2]
             cornerFour = markerOne[3]
             
-			# find center from corners
             centerX1 = int((cornerTwo[0] + cornerFour[0]) / 2)
             centerY1 = int((cornerTwo[1] + cornerFour[1]) / 2)
             centerX2 = int((cornerOne[0] + cornerThree[0]) / 2)
@@ -105,7 +101,6 @@ def aruco_detection():
             
             quadrant = 0
 
-			# compare aruco center point to quadrant
             if centerX > absX:
                 if centerY > absY:
                     quadrant = 3
@@ -122,13 +117,12 @@ def aruco_detection():
                 sendStuff = True
                 print(quadrant)
 
-            # GREG ADD HERE
+            # When a new quadrant is seen, send that info to the Arduino to move the wheel to the correct position
             if sendStuff == True:
                 writeNumber(quadrant)
                 lcd.message = "Setpoint: " + str(quadrant)
                 sendStuff = False
-            #
-		# display frame
+            
         cv2.imshow('frame',gray)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
