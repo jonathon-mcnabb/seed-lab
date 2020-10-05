@@ -1,0 +1,27 @@
+The Aruco marker detection algorithm does the following steps to determine the aruco's quadrant. 
+
+1) Grab the current frame of the video stream
+2) Use the aruco.detectMarkers method to get an array of the marker corner coordinates
+3) Use the corners to calculate the mid point of the aruco markers. 
+	3a)	0  -----------  1
+	   	  |    	      |
+	   	  |	      |
+	   	  |	*     |           <------ aruco marker
+	  	  |	      |
+	  	  |	      |
+	   	2  -----------  3
+
+		Calculate the midpoint (*) (both x and y) between the 0 and 3 corners. 
+		Calculate the midpoint (*) (both x and y) between the 1 and 2 corners. 
+
+		Average the two calculated midpoints to get a good approxamation of the actual midpoint
+
+4) use the full dimensions of the frame to find the midpoint of the frame
+	4a) 
+		
+		midX = totalWidth / 2
+		midY = totalHeight / 2
+
+5) compare the midpoint of the aruco marker to midX and midY to figure out what quadrant the arcuo marker is in
+
+6) Relay the quadrant to other subsystems
