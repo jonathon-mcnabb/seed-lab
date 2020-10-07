@@ -1,21 +1,12 @@
 /**
- * This file contains the final controller for the Mini Project.
- *
- * Ran on the arduino, this runs the controller on the wheel (using the
- * Encoder.h library), by going to a set point specified by the PI
- * over I2C comms (which is what the Wire.h library is used for).
- *
+ * This file performs the closed loop step response of the controller, live on the wheel.
  * @author Luke Henke
+ * @authur Gabe Alcantar-Lopez
+ *
+ * Class: Seed Lab.
  */
-
 #define ENCODER_OPTIMIZE_INTERRUPTS
 #include <Encoder.h>
-#include <Wire.h> // for I2C comms
-
-// Uncomment these # defines to add some debugging output.
-// #define DEBUG_ISR
-// #define I2C_DEBUG
-// #define DEBUG_MAIN
 
 // A & B pins for encoder 1
 #define A_1_PIN 2
@@ -54,28 +45,12 @@ void setup() {
     pinMode(STATUS_FLAG, INPUT);
 
     Serial.begin(74880);
-
-    // Setup I2C comms
-    Wire.begin(SLAVE_ADDRESS);
-    Wire.onReceive(dataFromI2C);
 }
 
 #define PERIOD 7 // in MS
 #define BATTERY_MAX_VOLTAGE 7.3
 
 static double setPosition = 0;
-void dataFromI2C(int numBytes) {
-    // For right now, we're only getting 1 byte at a time.
-    byte quadrant = Wire.read();
-
-    #ifdef I2C_DEBUG
-        Serial.print("From I2C: ");
-        Serial.print(quadrant);
-        Serial.println();
-    #endif
-
-    setPosition = quadrant * PI / 2;
-}
 
 /**
  * Ensures x doesn't get smaller than minVal, or larger than maxVal
@@ -97,45 +72,29 @@ double mapToRange(double x, double minVal, double maxVal) {
 }
 
 /**
- * Runs our PID controller, which is really just a P controller
+ * Runs our PID controller
  * @param  new_position the position in RADIANS
  * @return              Vout
  */
 double controller(double newPosition) {
-    static const double Kp = 10.0;
-    static const double Kd = 0;
-    static const double Ki = 0;
+    // Units out of matlab were in terms of seconds, we want MS.
+    static const double Kp = 0.00536*1e3;
+    static const double Kd = 0.01509*1e3;
+    static const double Ki = 0.00043*1e3;
 
-    // static double oldError = 0;
-    // static double sum = 0;
+    // static double oldPosition = 0; // TODO: provide a way to set this to 0 while the program is running
+    static double oldError = 0;
+    static double sum = 0;
 
     double newError = setPosition - newPosition;
-    // sum += newError;
+    sum += newPosition;
 
     double pTerm = (newError) * Kp;
-    // double dTerm = (newError - oldError) * Kd / PERIOD;
-    // double iTerm = sum * PERIOD * Ki;
+    double dTerm = (newError - oldError) * Kd / PERIOD;
+    double iTerm = sum * PERIOD * Ki; //sum * PERIOD * Ki;
+    oldError = newError;
 
-    #ifdef DEBUG_ISR
-        static long i = 0;
-        i++;
-
-        if (i%100 == 0) {
-
-            Serial.print(setPosition);
-            Serial.print("\t");
-            Serial.print(newPosition);
-            Serial.print("\t");
-            Serial.print(newError);
-            Serial.print("\t");
-            Serial.println(pTerm);
-        }
-    #endif
-
-    // oldError = newError;
-    // oldPosition = newPosition;
-
-    double Vout = pTerm;
+    double Vout = pTerm + iTerm + dTerm;
     return mapToRange(Vout, -BATTERY_MAX_VOLTAGE, BATTERY_MAX_VOLTAGE);
 }
 
@@ -148,7 +107,8 @@ void loop() {
     // Get the new voltage from our controller
     double Vout = controller(newPosition);
 
-    // If the Vout is negative, tell the motor to spin the motor in the other direction
+    // If the Vout is negative
+    // spin the motor in the other direction
     int direction = CLOCKWISE;
     if (Vout < 0) {
         Vout *= -1; // make Vout positive.
@@ -161,22 +121,24 @@ void loop() {
     analogWrite(MOTOR_1_PWM, pwm);
     digitalWrite(MOTOR_1_DIRECTION, direction);
 
-    #ifdef DEBUG_MAIN
-        static long i = 0;
-        i++;
 
-        // Only print once every 100 times.
-        if (i % 100 == 0) {
-            Serial.print(newPosition);
-            Serial.print("\t");
-            Serial.print(wheel.read());
-            Serial.print("\t");
-            Serial.print(Vout);
-            Serial.print("\t");
-            Serial.print(pwm);
-            Serial.println();
-        }
-    #endif
+    if (start_time > 1000 && start_time < 2000){
+        setPosition = 4 * PI;
+
+    }
+
+    static double oldPosition = 0;
+    double velocity = (newPosition - oldPosition) / PERIOD * 1e3;
+    //Print values of interest
+    Serial.print(start_time);
+    Serial.print("\t");
+    Serial.print(pwm);
+    Serial.print("\t");
+    Serial.print(velocity);
+    Serial.print("\t");
+    Serial.print(newPosition);
+    Serial.println();
+    oldPosition = newPosition;
 
     unsigned long end_time = millis();
 
