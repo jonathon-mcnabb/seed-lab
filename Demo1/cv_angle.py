@@ -92,13 +92,17 @@ def find_angles():
             
             quadrant = 0
 			
-			deltaX = abs(absX-centerX)
-			deltaY = abs(absY-centerY)
+	    deltaX = abs(absX-centerX)
+	    deltaY = abs(absY-centerY)
 			
-			xFOV = (deltaX/width) * 54
-			yFOV = (deltaY/height) * 41
+	    xFOV = (deltaX/width) * 54
+	    yFOV = (deltaY/height) * 41
+
+	    angle = xFOV
+
+	    print(angle)
         
-			#angle = np.sqrt(xFOV*xFOV+yFOV*yFOV)
+	    #angle = np.sqrt(xFOV*xFOV+yFOV*yFOV)
 			
 			
 			
