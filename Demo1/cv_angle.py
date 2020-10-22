@@ -52,7 +52,7 @@ def find_angles():
         aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
         parameters =  aruco.DetectorParameters_create()
 
-		# grab corners from frame
+        # grab corners from frame
         corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
         #if ids != None:
            #print("Found ids:")
@@ -92,17 +92,17 @@ def find_angles():
             
             quadrant = 0
 			
-	    deltaX = abs(absX-centerX)
-	    deltaY = abs(absY-centerY)
+        deltaX = abs(absX-centerX)
+        deltaY = abs(absY-centerY)
 			
-	    xFOV = (deltaX/width) * 54
-	    yFOV = (deltaY/height) * 41
+        xFOV = (deltaX/width) * 54
+        yFOV = (deltaY/height) * 41
 
-	    angle = xFOV
+        angle = xFOV
 
-	    print(angle)
+        print(angle)
         
-	    #angle = np.sqrt(xFOV*xFOV+yFOV*yFOV)
+        #angle = np.sqrt(xFOV*xFOV+yFOV*yFOV)
 			
 			
 			
