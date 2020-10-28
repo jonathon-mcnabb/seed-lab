@@ -1,3 +1,11 @@
+/**
+  * This file contains the complete rho_controller
+  *
+  * @author Luke Henke
+  *
+  * Class: Seed Lab.
+  */
+
 #include "functions.h"
 #include "constants.h"
 
@@ -45,14 +53,5 @@ double completeRhoController(double rhoDotActual, double rhoActual) {
 
     // return the result from the inner controller
     double output = innerRhoDotController(rhoDotActual, rhoDotDesired);
-
-    // Serial.print(rhoActual);
-    // Serial.print("\t");
-    // Serial.print(rhoDotDesired);
-    // Serial.print("\t");
-    // Serial.print(rhoDotActual);
-    // Serial.println();
-    Serial.print(output);
-    // Serial.println();
     return output;
 }

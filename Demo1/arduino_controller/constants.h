@@ -1,3 +1,12 @@
+/**
+ * This file contains the contains used across the control system, almost all as #DEFINE's
+ *
+ * @author Luke Henke
+ * @authur Gabe Alcantar-Lopez
+ *
+ * Class: Seed Lab.
+ */
+
 #pragma once
 
 #define ENCODER_OPTIMIZE_INTERRUPTS

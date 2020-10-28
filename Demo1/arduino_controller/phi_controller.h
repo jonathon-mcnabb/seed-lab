@@ -1,3 +1,11 @@
+/**
+  * This contains the inner and outer phi/angle controller
+  *
+  * @author Luke Henke
+  *
+  * Class: Seed Lab.
+  */
+
 #include "functions.h"
 #include "constants.h"
 
@@ -11,9 +19,6 @@ double innerPhiDotController(double phiDotActual, double phiDotSet) {
     static const double Kp = 5.5; //5.5;
     static double sum = 0;
 
-    // Serial.println("X");
-
-    // return pController(phiDotActual, phiDotSet, sum, Ki);
     double output = pController(phiDotActual, phiDotSet, Kp);
     output += iController(phiDotActual, phiDotSet, sum, Ki);
     return boundValue(output, BATTERY_MAX_VOLTAGE, -1*BATTERY_MAX_VOLTAGE);
@@ -44,13 +49,6 @@ double outerPhiController(double phiActual, double phiDesired) {
 double completePhiController(double phiDotActual, double phiActual) {
     // get the result from the outer controller
     double phiDotDesired = outerPhiController(phiActual, SET_PHI);
-
-    // Serial.print(phiActual);
-    // Serial.print("\t");
-    // Serial.print(phiDotDesired);
-    // Serial.print("\t");
-    // Serial.print(phiDotActual);
-    // Serial.println();
 
     // return the result from the inner controller
     return innerPhiDotController(phiDotActual, phiDotDesired);

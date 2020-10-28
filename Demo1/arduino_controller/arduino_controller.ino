@@ -1,5 +1,7 @@
 /**
- * This file contains the outer-loop control system.
+ * This is the "main" file for the Demo1 controller, which contains the setup()
+ * and loop() for the actual controller itself.
+ *
  * @author Luke Henke
  * @authur Gabe Alcantar-Lopez
  *
@@ -63,16 +65,8 @@ void loop() {
         if (withinEpsilon(phi, SET_PHI, 0.02)) { // withinEpsilon(phi, SET_PHI, 0.01)
             // Then, turn on the RHO controller
             SET_RHO = 0.3048; // 1 foot in meters
-
-            // Serial.println("Turned on RHO");
-
-            // TODO: Phi and Set_phi should remain close together
-            //  but would it be better to "reset" the encoder readings to 0, and then
-            //  make SET_PHI = 0.0? That way it becomes a "rotate" + Demo1 action.
         }
     #endif
-
-    // static double oldDeltaVa = 0;
 
     // Get the new values from the control system
     double deltaVa = completePhiController(phi_dot, phi);

@@ -1,8 +1,11 @@
 /**
- * To clean up the main file a little bit, this file exists to pull out generic functions.
- */
+  * To clean up the main file a little bit, this file exists to pull out generic functions.
+  * @author Luke Henke
+  *
+  * Class: Seed Lab.
+  */
 
-// This file is included in multiple areas, so prevent redeclaration errors
+// This file is included in multiple areas, so #pragma once is used to prevent redeclaration errors
 #pragma once
 #include "constants.h"
 
