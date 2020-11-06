@@ -39,13 +39,14 @@ def writeNumber(value):
 def find_angles():    
     # start video capture for distance
     cap = cv2.VideoCapture(0)
-	
+    # init "global" vars
     prevQuadrant = 0
     sendStuff = False
+    i = 0
     while(True):
         # Capture frame-by-frame
         ret, frame = cap.read()
-        #gray = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 		
 		
         # gray = cv2.flip(gray, 0) 
@@ -60,76 +61,100 @@ def find_angles():
         #else:
             #print("Aruco Marker not found")
 
-		# grab frame with aruco markers
+	# grab frame with aruco markers
         gray = aruco.drawDetectedMarkers(gray, corners, ids)
         
         height, width, _ = gray.shape
         deltaX = 0
         delyaY = 0
         
+        # get middle pixels
+        
         absX = int(width/2)
         absY = int(height/2)
         
+        #print(absX)
+        # = 320
+        
         #print("Corner: ", corners)
+        # if corners exists
         if len(corners):    #returns no of arucos
             #print (len(corners)
             aruco_list = {}
             #print (len(ids))
             markerOne = corners[0][0]
             
+            # grab corners
             cornerOne = markerOne[0]
             cornerTwo = markerOne[1]
             cornerThree = markerOne[2]
             cornerFour = markerOne[3]
             
-            centerX1 = int((cornerTwo[0] + cornerFour[0]) / 2)
-            centerY1 = int((cornerTwo[1] + cornerFour[1]) / 2)
-            centerX2 = int((cornerOne[0] + cornerThree[0]) / 2)
-            centerY2 = int((cornerOne[1] + cornerThree[1]) / 2)
-        
-            centerX = (centerX1+centerX2) / 2
-            centerY = (centerY1+centerY2) / 2
+            centerX1 = ((cornerTwo[0] + cornerFour[0]) / 2)
+            #centerY1 = int((cornerTwo[1] + cornerFour[1]) / 2)
+            centerX2 = ((cornerOne[0] + cornerThree[0]) / 2)
+            #centerY2 = int((cornerOne[1] + cornerThree[1]) / 2)
             
-            quadrant = 0
-			
-        deltaX = abs(absX-centerX)
-        deltaY = abs(absY-centerY)
-			
-        xFOV = (deltaX/width) * 54
-        yFOV = (deltaY/height) * 41
+            #centerX3 = ((cornerTwo[0] + cornerOne[0]) / 2)
+            #centerX4 = ((cornerThree[0] + cornerFour[0]) / 2)
+         
+            # calcualte center X coordinate of marker
+            centerX = (centerX1+centerX2) / 2
+            
+            #centerX_2 = (centerX3 + centerX4) / 2
+            #centerY = (centerY1+centerY2) / 2
+            
+            #centerX_4 = (centerX+centerX_2) / 2
+            
+            #print("CENTER: ", centerX)
+            #print("CENTER2: ", centerX_2)
+            #print("CENTER4: ", centerX_2)
+	    # find out how off centered we are
+            deltaX = abs(absX-centerX)
+            #deltaY = abs(absY-centerY)
+            
+            # get angle   
+            xFOV = (deltaX/width) * 54
+            #yFOV = (deltaY/height) * 41
 
-        angle = xFOV
-
-        print(angle)
-        
-        #angle = np.sqrt(xFOV*xFOV+yFOV*yFOV)
-			
-			
-			
-
-            if centerX > absX:
-                if centerY > absY:
-                    quadrant = 3
-                else:
-                    quadrant = 0
+            angle = xFOV
+            #print("ANGLE: ",angle)
+            
+            # if we are left of screen center, apply left polynomial fix
+            if(centerX < 320):
+                error = 0.0000487516774389672*(centerX**2)-0.0137673927681325*centerX-0.425377206030661
+                angle = angle - error
+                angle = 0 - angle
+            # if we are right of screen center, apply right polynominal fix
             else:
-                if centerY > absY:
-                    quadrant = 2
-                else:
-                    quadrant = 1
-			
-            if quadrant != prevQuadrant:
-                prevQuadrant = quadrant
-                sendStuff = True
-                print(quadrant)
+                error = 0.000032254210770952*(centerX**2)-0.03289220867007*centerX+7.53540624358558
+                angle = angle - error
+            if (centerX > 319 and centerX < 321):
+                # if we are centered, set angle to 0
+                angle = 0
+            
+            # print info every 10th frame a marker is found
+            if(i % 10 == 0):
+                print("ANGLE: ",angle)
+                print("CENTER: ", centerX)
+                lcd.message = "Angle: " + str(angle) + "\nCenterX: " + str(centerX)
+                
+            #if angle != prevAngle:
+                #prevQuadrant = angle
+                #sendStuff = True
+                #print(quadrant)
 
             # When a new quadrant is seen, send that info to the Arduino to move the wheel to the correct position
-            if sendStuff == True:
-                writeNumber(quadrant)
-                lcd.message = "Setpoint: " + str(quadrant)
-                sendStuff = False
-            
+            #if sendStuff == True:
+                #writeNumber(quadrant)
+                #lcd.message = "Setpoint: " + str(quadrant)
+                #sendStuff = False
+        
+        #angle = np.sqrt(xFOV*xFOV+yFOV*yFOV)
+		    
+        # show frame
         cv2.imshow('frame',gray)
+        i = i+1
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
         
