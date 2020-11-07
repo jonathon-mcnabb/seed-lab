@@ -242,8 +242,8 @@ def cv_exercise7():
 #cv_exercise4()
 #cv_exercise5()
 # only run 6 or 7. do not run both
-cv_exercise6()
-#cv_exercise7()
+#cv_exercise6()
+cv_exercise7()
     
 cv2.waitKey(0)
 

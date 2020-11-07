@@ -46,7 +46,8 @@ def find_angles():
     while(True):
         # Capture frame-by-frame
         ret, frame = cap.read()
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        gray = frame
+        #gray = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 		
 		
         # gray = cv2.flip(gray, 0) 
