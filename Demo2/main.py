@@ -27,7 +27,7 @@ detecting = True
 
 def write_to_serial(value):
     try:
-        ser.write(value)
+        ser.write(str(value).encode('utf-8'))
     except:
         print("Communication Error")
 
