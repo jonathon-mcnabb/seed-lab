@@ -44,6 +44,7 @@ def ReadfromArduino():
         line = ser.readline().decode('utf-8').rstrip()
             
         print("Arduino: ", line)
+        #ser.write(str(value).encode('utf-8'))
     except:
         print("READ Error")
 
