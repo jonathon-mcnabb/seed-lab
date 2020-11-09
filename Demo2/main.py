@@ -2,7 +2,7 @@
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
-from threading
+import threading
 from time import sleep
 import cv2
 import numpy as np
@@ -49,6 +49,7 @@ def write_to_i2c(bus, value):
         print("WRITE Error")
         
 def read_from_arduino(bus):
+    pass
     #while (bus.in_waiting > 0):
     #lock = threading.Lock()
     #lock.acquire()
@@ -254,7 +255,7 @@ def share_points():
         # POINTS DONE
 
         # FINAL ADJUSTMENTS
-            angle = round(angle - 3.8059460516, 3) # need to verify that adjustment is correct
+            angle = round(angle - 3.8059460516, 4) # need to verify that adjustment is correct
             
             value_to_send = 'A' + str(angle)
             
@@ -384,8 +385,8 @@ def share_angle():
     #frameCount = frameCount + 1
 
     cv2.imshow('frame', frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+   # if cv2.waitKey(1) & 0xFF == ord('q'):
+   #    break
     
 
 #cv_exercise1()
