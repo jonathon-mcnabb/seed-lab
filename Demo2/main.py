@@ -2,6 +2,7 @@
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
+from threading import Thread
 from time import sleep
 import cv2
 import numpy as np
@@ -23,7 +24,7 @@ time.sleep(3)
 
 detecting = True
 
-def write_to_serial(value):
+def write_to_serial(ser, value):
     try:
         print("Before write")
         #print(type(value))
@@ -38,7 +39,7 @@ def write_to_serial(value):
         print(e)
         print("WRITE Error")
         
-def ReadfromArduino():
+def ReadfromArduino(ser):
     #while (ser.in_waiting > 0):
     try:
         line = ser.readline().decode('utf-8').rstrip()
@@ -244,14 +245,19 @@ def share_points():
             angle = round(angle - 3.8059460516, 3) # need to verify that adjustment is correct
             
             value_to_send = 'A' + str(angle)
-            write_to_serial(value_to_send)
+            
+            t1 = Thread(target=write_to_serial, args=(ser, value_to_send))
+            t1.start()
+            #write_to_serial(value_to_send)
         # ADJUSTMENTS DONE
 
             print("Distance: ", finalDistance)
             print("ANGLE: ", angle)
             print("POINTS: ", points)
             
-            ReadfromArduino()
+            t2 = Thread(target=ReadfromArduino, args=(ser))
+            t2.start()
+            
 
 
     #print(frameCount)
