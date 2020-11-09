@@ -26,32 +26,36 @@ detecting = True
 
 def write_then_read(ser, value):
     write_to_serial(ser, value)
-    ReadfromArduino(ser)
+    read_from_arduino(ser)
 
 def write_to_serial(ser, value):
     try:
-        print("Before write")
+        
+        #print("Before write")
         #print(type(value))
         #ser.flush()
-        print("value", value)
+        #print("value", value)
         ser.write(value.encode())
         # ser.write(1)
-        time.sleep(5)
+        time.sleep(3)
         #time.sleep(6)
-        print("After write")
+        #print("After write")
     except Exception as e:
         print(e)
         print("WRITE Error")
         
-def ReadfromArduino(ser):
+def read_from_arduino(ser):
     #while (ser.in_waiting > 0):
+    lock = threading.Lock()
+    lock.acquire()
     try:
-        line = ser.readline().decode('utf-8').rstrip()
+        if ser.in_waiting > 0:
+            line = ser.readline().decode('utf-8').rstrip()
             
-        print("Arduino: ", line)
-        #ser.write(str(value).encode('utf-8'))
+            print("Arduino: ", line)
     except:
         print("READ Error")
+    lock.release()
 
 def set_high_res():
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,2592)
@@ -257,14 +261,14 @@ def share_points():
             #write_to_serial(value_to_send)
         # ADJUSTMENTS DONE
 
-            print("Distance: ", finalDistance)
-            print("ANGLE: ", angle)
-            print("POINTS: ", points)
+            #print("Distance: ", finalDistance)
+            #print("ANGLE: ", angle)
+            #print("POINTS: ", points)
             
             #t1 = Thread(target=write_to_serial, args=(ser, value_to_send))
             #t1.start()
             
-            #t2 = Thread(target=ReadfromArduino, args=(ser))
+            #t2 = Thread(target=read_from_arduino, args=(ser))
             #t2.start()
             
             #t3 = Thread(target=write_then_read, args=(ser, value_to_send))
@@ -272,13 +276,13 @@ def share_points():
             
             thread_list = []
             for thread in threading.enumerate():
-                print(thread.getName())
+                #print(thread.getName())
                 thread_list.append(thread.getName())
             if "send" not in thread_list:
                 t1 = threading.Thread(target=write_to_serial, name="send",  args=(ser, value_to_send,))
                 t1.start()
             elif "receive" not in thread_list:
-                t2 = threading.Thread(target=ReadfromArduino, name="receive", args=(ser,))
+                t2 = threading.Thread(target=read_from_arduino, name="receive", args=(ser,))
                 t2.start()
             
 
