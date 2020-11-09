@@ -22,6 +22,8 @@ vazao = 5.3
 command = 20
 teste = 30
 
+angle = 18.92
+
 if __name__ == '__main__':
     prevmillis = millis()
 
@@ -30,11 +32,9 @@ if __name__ == '__main__':
         if(currentmillis - prevmillis > interval):
             
             #write
-            bytescommand = struct.pack('=2fbb',temperatura,vazao,command,teste) #para evitar o ajuste
-            message = "A-18.32"
-            message.encode('ascii')
+            bytescommand = struct.pack('=2fbb',angle) #para evitar o ajuste
+
 	   
-            bytescommand = message 
             bus.write_block_data(arduinoAddress,1,list(bytescommand))
             print(list(bytescommand))
             
