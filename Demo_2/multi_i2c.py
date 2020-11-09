@@ -35,7 +35,7 @@ if __name__ == '__main__':
             message.encode('ascii')
 	   
             bytescommand = message 
-            bus.write_block_data(arduinoAddress,1,list(bytescommand))
+            bus.write_block_data(arduinoAddress,1,bytescommand)
             print(list(bytescommand))
             
             #request
