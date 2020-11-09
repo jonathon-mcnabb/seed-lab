@@ -2,7 +2,7 @@
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
-from threading import Thread
+from threading
 from time import sleep
 import cv2
 import numpy as np
@@ -261,14 +261,25 @@ def share_points():
             print("ANGLE: ", angle)
             print("POINTS: ", points)
             
-            t1 = Thread(target=write_to_serial, args=(ser, value_to_send))
-            t1.start()
+            #t1 = Thread(target=write_to_serial, args=(ser, value_to_send))
+            #t1.start()
             
-            t2 = Thread(target=ReadfromArduino, args=(ser))
-            t2.start()
+            #t2 = Thread(target=ReadfromArduino, args=(ser))
+            #t2.start()
             
             #t3 = Thread(target=write_then_read, args=(ser, value_to_send))
             #t3.start()
+            
+            thread_list = []
+            for thread in threading.enumerate():
+                print(thread.getName())
+                thread_list.append(thread.getName())
+            if "send" not in thread_list:
+                t1 = threading.Thread(target=write_to_serial, name="send",  args=(ser, value_to_send,))
+                t1.start()
+            elif "receive" not in thread_list:
+                t2 = threading.Thread(target=ReadfromArduino, name="receive", args=(ser,))
+                t2.start()
             
 
 
