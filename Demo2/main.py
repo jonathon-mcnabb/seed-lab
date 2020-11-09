@@ -24,6 +24,10 @@ time.sleep(3)
 
 detecting = True
 
+def write_then_read(ser, value):
+    write_to_serial(ser, value)
+    ReadfromArduino(ser)
+
 def write_to_serial(ser, value):
     try:
         print("Before write")
@@ -246,8 +250,10 @@ def share_points():
             
             value_to_send = 'A' + str(angle)
             
-            t1 = Thread(target=write_to_serial, args=(ser, value_to_send))
-            t1.start()
+            # value_to_send = 'A-11.744'
+            # value_to_send = (90,0.6096)(-90,1.2192)(-90,1.2192)(-90,1.2192)(-90,0.6096)
+            
+          
             #write_to_serial(value_to_send)
         # ADJUSTMENTS DONE
 
@@ -255,8 +261,14 @@ def share_points():
             print("ANGLE: ", angle)
             print("POINTS: ", points)
             
+            t1 = Thread(target=write_to_serial, args=(ser, value_to_send))
+            t1.start()
+            
             t2 = Thread(target=ReadfromArduino, args=(ser))
             t2.start()
+            
+            #t3 = Thread(target=write_then_read, args=(ser, value_to_send))
+            #t3.start()
             
 
 
@@ -353,6 +365,8 @@ def share_angle():
     #frameCount = frameCount + 1
 
     cv2.imshow('frame', frame)
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
     
 
 #cv_exercise1()
