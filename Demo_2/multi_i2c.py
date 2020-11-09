@@ -32,7 +32,7 @@ if __name__ == '__main__':
             #write
             bytescommand = struct.pack('=2fbb',temperatura,vazao,command,teste) #para evitar o ajuste
             message = "A-18.32"
-	    message.encode('ascii')
+            message.encode('ascii')
 	   
             bytescommand = message 
             bus.write_block_data(arduinoAddress,1,list(bytescommand))
