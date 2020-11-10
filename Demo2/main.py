@@ -2,19 +2,21 @@
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
-from threading
+import threading
 from time import sleep
 import cv2
 import numpy as np
 from cv2 import aruco
 import array
 import serial
+from smbus import SMBus
 
-# Set serial address
+# Set busial address
 
-# VERIFY SERIAL PORT THAT ARDUINO IS CONNECTED TO
+# VERIFY busIAL PORT THAT ARDUINO IS CONNECTED TO
 try:
-    ser = serial.Serial('/dev/ttyACM0', 115200,timeout=2, write_timeout=2)
+    addr = 0x8 # bus address
+    bus = SMBus(1) # indicates /dev/ic2-1
 except:
     print("port not availble")
 # Wait for connection to complete
@@ -24,38 +26,41 @@ time.sleep(3)
 
 detecting = True
 
-def write_then_read(ser, value):
-    write_to_serial(ser, value)
-    read_from_arduino(ser)
+def write_then_read(bus, value):
+    write_to_i2c(bus, value)
+    read_from_arduino(bus)
 
-def write_to_serial(ser, value):
+def write_to_i2c(bus, value):
     try:
-        
+        b = value.encode('ascii')
+        for byte in b:
+            bus.write_byte(addr, byte) # switch it on
         #print("Before write")
         #print(type(value))
-        #ser.flush()
+        #bus.flush()
         #print("value", value)
-        ser.write(value.encode())
-        # ser.write(1)
-        time.sleep(3)
+        #bus.write(value.encode())
+        # bus.write(1)
+        #time.sleep(3)
         #time.sleep(6)
         #print("After write")
     except Exception as e:
         print(e)
         print("WRITE Error")
         
-def read_from_arduino(ser):
-    #while (ser.in_waiting > 0):
-    lock = threading.Lock()
-    lock.acquire()
-    try:
-        if ser.in_waiting > 0:
-            line = ser.readline().decode('utf-8').rstrip()
-            
-            print("Arduino: ", line)
-    except:
-        print("READ Error")
-    lock.release()
+def read_from_arduino(bus):
+    pass
+    #while (bus.in_waiting > 0):
+    #lock = threading.Lock()
+    #lock.acquire()
+    #try:
+    #    if bus.in_waiting > 0:
+    #        line = bus.readline().decode('utf-8').rstrip()
+    #        
+    #        print("Arduino: ", line)
+    #except:
+    #    print("READ Error")
+    #lock.release()
 
 def set_high_res():
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,2592)
@@ -239,18 +244,18 @@ def share_points():
             
             
             value_to_send = '(' + str(point1[x]) + ',' + str(point1[y]) + ')' + '(' + str(point2[x]) + ',' + str(point2[y]) + ')' + '(' + str(point3[x]) + ',' + str(point3[y]) + ')'+ '(' + str(point4[x]) + ',' + str(point4[y]) + ')'
-            #write_to_serial(value_to_send) 
+            #write_to_i2c(value_to_send) 
             
             sleep(0.01)
             
             value_to_send = '(' + str(point5[x]) + ',' + str(point5[y]) + ')' + '(' + str(point6[x]) + ',' + str(point6[y]) + ')'
-            #write_to_serial(value_to_send)
+            #write_to_i2c(value_to_send)
             
 
         # POINTS DONE
 
         # FINAL ADJUSTMENTS
-            angle = round(angle - 3.8059460516, 3) # need to verify that adjustment is correct
+            angle = round(angle - 3.8059460516, 4) # need to verify that adjustment is correct
             
             value_to_send = 'A' + str(angle)
             
@@ -258,20 +263,20 @@ def share_points():
             # value_to_send = (90,0.6096)(-90,1.2192)(-90,1.2192)(-90,1.2192)(-90,0.6096)
             
           
-            #write_to_serial(value_to_send)
+            #write_to_i2c(value_to_send)
         # ADJUSTMENTS DONE
 
             #print("Distance: ", finalDistance)
             #print("ANGLE: ", angle)
             #print("POINTS: ", points)
             
-            #t1 = Thread(target=write_to_serial, args=(ser, value_to_send))
+            #t1 = Thread(target=write_to_i2c, args=(bus, value_to_send))
             #t1.start()
             
-            #t2 = Thread(target=read_from_arduino, args=(ser))
+            #t2 = Thread(target=read_from_arduino, args=(bus))
             #t2.start()
             
-            #t3 = Thread(target=write_then_read, args=(ser, value_to_send))
+            #t3 = Thread(target=write_then_read, args=(bus, value_to_send))
             #t3.start()
             
             thread_list = []
@@ -279,10 +284,10 @@ def share_points():
                 #print(thread.getName())
                 thread_list.append(thread.getName())
             if "send" not in thread_list:
-                t1 = threading.Thread(target=write_to_serial, name="send",  args=(ser, value_to_send,))
+                t1 = threading.Thread(target=write_to_i2c, name="send",  args=(bus, value_to_send,))
                 t1.start()
             elif "receive" not in thread_list:
-                t2 = threading.Thread(target=read_from_arduino, name="receive", args=(ser,))
+                t2 = threading.Thread(target=read_from_arduino, name="receive", args=(bus,))
                 t2.start()
             
 
@@ -374,14 +379,14 @@ def share_angle():
         angle = round(angle - 3.8059460516, 4)  # need to verify that adjustment is correct
         # ADJUSTMENTS DONE
         value_to_send = 'A' + angle
-        write_to_serial(value_to_send)
+        write_to_i2c(value_to_send)
 
     #print(frameCount)
     #frameCount = frameCount + 1
 
     cv2.imshow('frame', frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+   # if cv2.waitKey(1) & 0xFF == ord('q'):
+   #    break
     
 
 #cv_exercise1()
