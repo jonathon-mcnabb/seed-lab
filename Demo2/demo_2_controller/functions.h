@@ -1,5 +1,9 @@
 /**
  * To clean up the main file a little bit, this file exists to pull out generic functions.
+ *
+ * @author: Luke Henke
+ *
+ * Class: SEED lab
  */
 
 // This file is included in multiple areas, so prevent redeclaration errors
@@ -20,6 +24,14 @@ double calculateV2(double Va, double deltaVa) {
     return (Va - deltaVa) / 2.0;
 }
 
+/**
+ * These two functions allow for the controller to be turned off
+ * once the robot gets "close enough", i.e., it's "within epsilon"
+ * of the set point
+ * @param  currVal Current value
+ * @param  setVal  Set Value
+ * @return         true or false
+ */
 bool withinEpsilon(double currVal, double setVal) {
     return fabs(currVal - setVal) <= EPSILON;
 }

@@ -18,9 +18,8 @@
 #include "rho_controller.h"
 #include "points_buffer.h"
 
+// Comment out this line of code to only do the first-half of Demo2, i.e. rotate and move to within a foot.
 #define DEMO_2
-
-// #define WIRE_PIN 8
 
 // Setup the wheel encoder.
 Encoder rightWheel1(A_1_PIN, B_1_PIN); // right wheel is wheel #1
@@ -41,36 +40,47 @@ void setup() {
 
     Serial.begin(115200);
     Serial.setTimeout(2);
+
+    // Setup I2C comms
     Wire.begin(0x8);
     Wire.onReceive(fromI2C);
-
-
-    // negative angle = left spin
-    // positive angle = right spin
-    // pointQueue.enqueue({0.6096, PI/2});
-    // pointQueue.enqueue({1.2192, -PI/2});
-    // pointQueue.enqueue({1.2192, -PI/2});
-    // pointQueue.enqueue({1.2192, -PI/2});
-    // pointQueue.enqueue({0.6096, -PI/2});
 }
 
+
+// These global variables, along with the function below, work to handle
+// all communication from the PI.
+//
+// Based on what is received, the appropriate value is set, and the appropriate
+// boolean flag is set to true.
 double angleFromPi = 0.0;
 double distanceFromMarker = 0.0;
 bool receivedAngleFromPi = false;
 bool receivedDistanceFromPi = false;
+
+/**
+ * This function is effectively an interrupt, and is called
+ * every time data is received from the I2C comms
+ * @param byteCount how many bytes were sent, we don't use this value.
+ */
 void fromI2C(const size_t byteCount) {
     static char buffer[64];
     static size_t i = 0;
     static boolean seenAnAorD = false;
     boolean parseNumber = false;
 
+    // Parse all data from the Wire, until we hit a stop point
     while (Wire.available()) {
         char c = Wire.read();
         Serial.print(c);
+
+        // 'A' and 'D' are the 'start bits'
+        // these also determine what's been sent: angle, or distance info
         if ((c != 'A' && c != 'D') && !seenAnAorD)
             continue;
 
         seenAnAorD = true;
+
+        // 'S' is the 'stop' bit
         if (c == 'S') {
             seenAnAorD = false;
             parseNumber = true;
@@ -83,23 +93,22 @@ void fromI2C(const size_t byteCount) {
         i %= 64;
     }
 
-    // Once we've read 7 bytes, we've gotten the angle
-    // If we have _all_ data from the PI, then it's seen the marker
-    // We *always* expect: A<angle>
-    //      where <angle> is of the form: X.XXXX (radians)
-    // when in this state
-    // this at least 7 bytes long
-    // easily long enough to be in the buffer
+    // Once we received an 'S', either an angle or distance has been sent
+    // these are of the form: A<angle>S, where <angle> is a floating-point value representing radians
+    // or: D<distance>S, where <distance> is a floating-point value representing meters
     if (parseNumber) {
         Serial.println();
+
+        // To parse the float, we use a clever trick: strtod() converts a C-style string
+        // to a double-precision float. This means we need to:
+        // (1) Use our char[] buffer as a C-style string (i.e. terminate w/ a null).
+        // (2) Ensure only the <angle> or <distance> is in the buffer, not the 'A', 'D', or 'S'.
         buffer[i] = '\0'; // null-terminate the string
         i++;
-
-        // Serial.print("Raw buffer: ");
-        // Serial.println(buffer);
-
         double parsedDouble = strtod(buffer+1, nullptr); // Skip over the 'A' or 'D'
 
+        // Based on the value in buffer[0], the parsed number is either an angle
+        // or a distance. Set the values appropriately
         switch (buffer[0]) {
             case 'A':
                 receivedAngleFromPi = true;
@@ -114,7 +123,6 @@ void fromI2C(const size_t byteCount) {
 
         i = 0;
 
-        // Serial.print("Parse double from I2C: ");
         Serial.println(parsedDouble);
         parseNumber = false;
     }
@@ -147,6 +155,12 @@ void setMotorsVoltage(double Va, double deltaVa) {
     digitalWrite(MOTOR_2_DIRECTION, leftWheelDirection);
 }
 
+/**
+ * The main controller for a phi change. Uses both Kp and Ki
+ * @param  currentAngle the current angle of the robot
+ * @param  setAngle     the set angle of the robot
+ * @return              the voltage value
+ */
 double turnController(const double currentAngle, const double setAngle) {
     const double Kp = 15;
     const double Ki = 220;
@@ -157,15 +171,11 @@ double turnController(const double currentAngle, const double setAngle) {
     return fromPController + fromIController;
 }
 
+// The main loop() has a state machine, so this is the TYPEDEF for that machine.
 typedef enum { SPIN_TO_ARUCO, MOVE_TO_ARUCO, UPDATE_SET_POINT, SPIN_TO_SET_ANGLE, MOVE_TO_SET_RADIUS, HALT_ROBOT } fsm_t;
 void loop() {
     const unsigned long start_time = millis();
     static fsm_t state = SPIN_TO_ARUCO; // Default state: spin until you see the aruco marker
-
-    static double oldAngle = 0;
-    static double oldRadius = 0;
-    static double oldX = 0;
-    static double oldY = 0;
 
     static double piSetRadius = 0;
     static double piSetAngle = 0;
@@ -191,14 +201,14 @@ void loop() {
     // Then state machine this
     switch (state) {
         case SPIN_TO_ARUCO: {
-            // Assume spin 180-degrees until the PI sends us data
+            // Assume spin 360-degrees until the PI sends us data
             // and once it does, remember the old data
             static double setAngle = 2*PI;
             static boolean turnOnController = false;
             static boolean readAnAngleBefore = false;
             static boolean turnOffMotor = false;
 
-            // TODO: Patch up this logic. Cause this sucks...
+            // If we've received and angle from the Pi for the first time, halt movement
             if (receivedAngleFromPi && !readAnAngleBefore) {
                 receivedAngleFromPi = false;
 
@@ -211,13 +221,15 @@ void loop() {
                 readAnAngleBefore = true;
             }
 
+            // Then, wait for the angle measurement to stablize before moving again.
             if (receivedAngleFromPi && readAnAngleBefore && !turnOnController) {
                 static double previousMeasurement = 10.0;
                 receivedAngleFromPi = false;
 
+                // Stablize ==> the difference between the previous measurement and the current measurement
+                // is extremely small
                 if (withinEpsilon(previousMeasurement, angleFromPi, 0.005)) {
                     setAngle = angleFromPi + (angleFromPi < 0 ? 0.1 : -0.05);
-                    // currentAngle = 0;
                     turnOnController = true;
                     turnOffMotor = false;
                 } else {
@@ -236,22 +248,15 @@ void loop() {
                 break;
             }
 
-            // if (withinEpsilon(angleFromPi, 0.0, 0.01)) {
-            //     state = HALT_ROBOT;
-            //     break;
-            // }
-
             // Spin us to the set angle
-            // const double Kp = 5;
             Serial.print("Current angle: ");
             Serial.println(currentAngle);
             Serial.print("Set angle: ");
             Serial.println(setAngle);
 
+            // We either spin at a constant rate (deltaVa = 4.0)
+            // or spin to the set angle, based on whether we have a reliable angle from the pi.
             const double deltaVa = (turnOnController ? turnController(currentAngle, setAngle) : 4.0);
-            // const double deltaVa = turnOnController ?
-                // pController(currentAngle, setAngle, 15.0)
-                // : 2;
             const double Va = 0;
 
             if (turnOffMotor) {
@@ -263,6 +268,7 @@ void loop() {
         }
 
         // Moves to within 1 foot of the aruco marker
+        // ...which is really just enquing the point { distance, 0 } to the queue
         case MOVE_TO_ARUCO: {
             const double distanceToMove = distanceFromMarker - 0.1;
             Serial.print("Move to: ");
@@ -271,7 +277,7 @@ void loop() {
             // Enqueue the distance
             pointQueue.enqueue({ distanceToMove, 0 });
 
-            // Enqueue all the points
+            // Enqueue all the points around the box.
             #ifdef DEMO_2
                 pointQueue.enqueue({0.3448, PI/2}); // move right
                 pointQueue.enqueue({0.6496, -PI/2}); // move up
@@ -294,7 +300,7 @@ void loop() {
                 break;
             }
 
-            point new_point = get_next_point();
+            const point new_point = get_next_point();
             piSetRadius = new_point.radius;
             piSetAngle = new_point.angle;
 
@@ -309,7 +315,7 @@ void loop() {
          * The angle we should aim towards is based on currentX/Y and the setX/Y
          */
         case SPIN_TO_SET_ANGLE: {
-            const double setAngle = piSetAngle; //atan2(deltaY, deltaX); // returns angle in radians
+            const double setAngle = piSetAngle;
 
             Serial.print("Facing set angle\t");
 
@@ -322,8 +328,6 @@ void loop() {
             }
 
             // Else, turn until we get there.
-            // const double Kp = 15;
-            // const double deltaVa = pController(currentAngle, setAngle, Kp);
             const double deltaVa = turnController(currentAngle, setAngle);
             const double Va = 0;
 
@@ -333,9 +337,6 @@ void loop() {
 
         /**
          * State MOVE_TO_SET_RADIUS: move until we've moved the correct radius
-         *
-         * We always keep the wheels moving forward at a nominal rate, say 2 V, and then we control Kp
-         * such that we are always pointing toward the set point.
          */
         case MOVE_TO_SET_RADIUS: {
             // Hold the angle steady, while we move steadily forward _to_ the set radiuan
@@ -353,10 +354,9 @@ void loop() {
                 break;
             }
 
-            // Use a pController to change the angle
-            const double Kp = 15;
+            // We use a turn controller to ensure we don't drift from the setAngle
+            // While we move at a nominal rate to the set point.
             const double deltaVa = pController(currentAngle, setAngle, Kp);
-            // const double deltaVa = turnController(currentAngle, setAngle);
             const double Va = NOMINAL_VOLTAGE;
             setMotorsVoltage(Va, deltaVa);
             break;
