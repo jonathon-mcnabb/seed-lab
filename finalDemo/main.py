@@ -72,40 +72,22 @@ def set_low_res():
 
 
 def share_points():
-    
-    print("test")
-    
-    # start video capture for distance
-    
-    #frameCount = 0
-    
-    #set_low_res()
         
     cap = cv2.VideoCapture(0)
 
     cap.set(cv2.CAP_PROP_FPS, 150)
-    #cap.set(cv2.CAP_PROP_FRAME_WIDTH,2592)
-    #cap.set(cv2.CAP_PROP_FRAME_HEIGHT,1944)
     cap.set(cv2.CAP_PROP_EXPOSURE, 0.01)
 
     while True:
-        print("test2")
     # Capture frame-by-frame
         start = time.time()
         ret, frame = cap.read()
         gray = frame
-        #gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
 
         aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
         parameters =  aruco.DetectorParameters_create()
 
         corners, ids, rejectedImgPoints = aruco.detectMarkers(gray, aruco_dict, parameters=parameters)
-            #if ids != None:
-               #print("Found ids:")
-               #print(ids)
-            #else:
-                #print("Aruco Marker not found")
 
         gray = aruco.drawDetectedMarkers(gray, corners, ids)
 
@@ -116,7 +98,6 @@ def share_points():
         absX = int(width/2)
         absY = int(height/2)
 
-        #print("Corner: ", corners)
         if len(corners):    #returns no of arucos
                 #print (len(corners)
             aruco_list = {}
@@ -132,14 +113,8 @@ def share_points():
 
         # ANGLE
             centerX1 = ((cornerTwo[0] + cornerFour[0]) / 2)
-            #centerY1 = int((cornerTwo[1] + cornerFour[1]) / 2)
             centerX2 = ((cornerOne[0] + cornerThree[0]) / 2)
-            #centerY2 = int((cornerOne[1] + cornerThree[1]) / 2)
 
-            #centerX3 = ((cornerTwo[0] + cornerOne[0]) / 2)
-            #centerX4 = ((cornerThree[0] + cornerFour[0]) / 2)
-
-            # calcualte center X coordinate of marker
             centerX = (centerX1+centerX2) / 2
 
             # find out how off centered we are
@@ -148,11 +123,9 @@ def share_points():
 
             # get angle
             xFOV = (deltaX/width) * 54
-            #yFOV = (deltaY/height) * 41
 
             angle = xFOV
-            #print("ANGLE: ",angle)
-
+            
             # if we are left of screen center, apply left polynomial fix
             if(centerX < 320):
                 error = 0.0000487516774389672*(centerX**2)-0.0137673927681325*centerX-0.425377206030661
@@ -206,13 +179,6 @@ def share_points():
             y = 1
 
             # figure out points to move to
-
-            #point1 = [finalDistance - boxOffset, 0]
-            #point2 = [point1[x] , point1[y] + 2*boxOffset]
-            #point3 = [point2[x] + 4*boxOffset, point2[y]]
-            #point4 = [point3[x], point3[y] - 4*boxOffset]
-            #point5 = [point4[x] - 4*boxOffset, point4[y]]
-            #point6 = [point5[x], point5[y] + 2*boxOffset]
             
             point1 = [finalDistance - boxOffset, 0]
             point2 = [0 , 2*boxOffset]
@@ -244,13 +210,10 @@ def share_points():
             
             
             value_to_send = '(' + str(point1[x]) + ',' + str(point1[y]) + ')' + '(' + str(point2[x]) + ',' + str(point2[y]) + ')' + '(' + str(point3[x]) + ',' + str(point3[y]) + ')'+ '(' + str(point4[x]) + ',' + str(point4[y]) + ')'
-            #write_to_i2c(value_to_send) 
             
             sleep(0.01)
             
             value_to_send = '(' + str(point5[x]) + ',' + str(point5[y]) + ')' + '(' + str(point6[x]) + ',' + str(point6[y]) + ')'
-            #write_to_i2c(value_to_send)
-            
 
         # POINTS DONE
 
@@ -259,36 +222,24 @@ def share_points():
             
             value_to_send = 'A' + str(angle)
             
-            # value_to_send = 'A-11.744'
-            # value_to_send = (90,0.6096)(-90,1.2192)(-90,1.2192)(-90,1.2192)(-90,0.6096)
-            
           
             #write_to_i2c(value_to_send)
         # ADJUSTMENTS DONE
 
-            #print("Distance: ", finalDistance)
-            #print("ANGLE: ", angle)
-            #print("POINTS: ", points)
+            print("Distance: ", finalDistance)
             
-            #t1 = Thread(target=write_to_i2c, args=(bus, value_to_send))
-            #t1.start()
-            
-            #t2 = Thread(target=read_from_arduino, args=(bus))
-            #t2.start()
-            
-            #t3 = Thread(target=write_then_read, args=(bus, value_to_send))
-            #t3.start()
-            
-            thread_list = []
-            for thread in threading.enumerate():
-                #print(thread.getName())
-                thread_list.append(thread.getName())
-            if "send" not in thread_list:
-                t1 = threading.Thread(target=write_to_i2c, name="send",  args=(bus, value_to_send,))
-                t1.start()
-            elif "receive" not in thread_list:
-                t2 = threading.Thread(target=read_from_arduino, name="receive", args=(bus,))
-                t2.start()
+            sending = True
+            if sending:
+                thread_list = []
+                for thread in threading.enumerate():
+               		  #print(thread.getName())
+                    thread_list.append(thread.getName())
+                if "send" not in thread_list:
+                    t1 = threading.Thread(target=write_to_i2c, name="send",  args=(bus, value_to_send,))
+                    t1.start()
+                elif "receive" not in thread_list:
+                    t2 = threading.Thread(target=read_from_arduino, name="receive", args=(bus,))
+                    t2.start()
             
 
 
