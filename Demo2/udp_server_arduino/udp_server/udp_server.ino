@@ -15,6 +15,7 @@ void setup() {
   // Setup serial port
   Serial.begin(115200);
   Serial.println();
+  Serial.println(WiFi.macAddress());
 
   // Begin WiFi
   WiFi.begin(WIFI_SSID);
@@ -27,7 +28,6 @@ void setup() {
   {
     delay(100);
     Serial.print(".");
-    Serial.println(WiFi.macAddress());
   }
 
   // Connected to WiFi
@@ -56,7 +56,7 @@ void loop() {
     }
     Serial.print("Packet received: ");
     Serial.println(packet);
-    Serial1.print(packet);
+
     // Send return packet
     UDP.beginPacket(UDP.remoteIP(), UDP.remotePort());
     UDP.write(reply);
