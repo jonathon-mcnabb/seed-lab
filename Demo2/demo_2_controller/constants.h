@@ -46,9 +46,6 @@
 #define PERIOD 10 // in MS
 #define BATTERY_MAX_VOLTAGE 8.2
 
-#define SET_RHO_DOT (PI * SET_RADIUS / SET_TIME)
-#define SET_PHI_DOT (PI / SET_TIME) // = PI / t_0
-
 #define EPSILON 0.5
 #define TAU (6.28318530718)
 #define NOMINAL_VOLTAGE 8
