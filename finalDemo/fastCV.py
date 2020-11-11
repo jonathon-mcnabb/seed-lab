@@ -1,4 +1,4 @@
-# USAGE
+43# USAGE
 # python picamera_fps_demo.py
 # python picamera_fps_demo.py --display 1 --log 2
 
@@ -31,14 +31,17 @@ state = "a"
 def write_to_i2c(bus, value, frame_number):
     global last_sent
     if frame_number < last_sent:
+        #print("[INFO] skipping frame in write_to_i2c")
         return
     try:
         b = value.encode('ascii')
         for byte in b:
             bus.write_byte(addr, byte)
         last_sent = frame_number
+        print("sent")
     except Exception as e:
         print("Write Error: ", e)
+        pass
     last_sent = frame_number
 
 def read_from_i2c(bus):
@@ -49,8 +52,10 @@ aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
 
 def process_frame(frame, frame_number):
+    start = time.time()
     global last_sent
     if frame_number < last_sent:
+        print("[INFO] skipping frame in process_frame")
         return
     corners, ids, _ = aruco.detectMarkers(frame, aruco_dict, parameters=parameters)
     if len(corners):
@@ -103,6 +108,8 @@ def process_frame(frame, frame_number):
         if value_to_send is not "":
             t1 = threading.Thread(target=write_to_i2c, name="send", args=(bus, value_to_send,frame_number))
             t1 .start()
+    end = time.time()
+    print(end - start)
 
 
 # construct the argument parse and parse the arguments
@@ -135,17 +142,9 @@ camera.close()
 # and start the FPS counter
 
 if args["log"] > 0:
-    print("[INFO] sampling THREADED frames from `picamera` module in...")
-    print("3")
+    print("[INFO] sampling frames...")
 vs = PiVideoStream().start()
 time.sleep(1.0)
-if args["log"] > 0:
-    print("2")
-
-time.sleep(1.0)
-
-if args["log"] > 0:
-    print("1") 
 fps = FPS().start()
 
 # loop over some frames...this time using the threaded stream
@@ -174,7 +173,6 @@ else:
         t1 = threading.Thread(target=process_frame, name="process_frame", args=(frame, frame_number))
         t1.start()
         frame = imutils.resize(frame, width=400)
-        
         if args["display"] > 0:
             cv2.imshow("Frame", frame)
             key = cv2.waitKey(1) & 0xFF
