@@ -9,6 +9,7 @@ import numpy as np
 from cv2 import aruco
 import array
 import serial
+from math import radians
 from smbus import SMBus
 
 # Set busial address
@@ -31,6 +32,7 @@ def write_then_read(bus, value):
     read_from_arduino(bus)
 
 def write_to_i2c(bus, value):
+    print(value)
     try:
         b = value.encode('ascii')
         for byte in b:
@@ -181,8 +183,8 @@ def share_points():
             arucoHeight = (deltaY1+deltaY2) / 2
 
             #figure out width of screen
-            screenWidth = 0.15 / (arucoWidth / width)
-            screenHeight = 0.15 / (arucoHeight / height)
+            screenWidth = 0.10 / (arucoWidth / width)
+            screenHeight = 0.10 / (arucoHeight / height)
 
             # figure out how many pixels correlates t
             f = 0.0036
@@ -198,7 +200,7 @@ def share_points():
 
         # POINTS
 
-            boxOffset = 0.1524
+            boxOffset = 0.2 #0.1524
 
             # Are all boxes the same size?
 
@@ -255,9 +257,9 @@ def share_points():
         # POINTS DONE
 
         # FINAL ADJUSTMENTS
-            angle = round(angle - 3.8059460516, 4) # need to verify that adjustment is correct
+            angle = round(radians(angle - 3.8059460516), 4) # need to verify that adjustment is correct
             
-            value_to_send = 'A' + str(angle)
+            value_to_send = 'A' + str(angle) + 'S'
             
             # value_to_send = 'A-11.744'
             # value_to_send = (90,0.6096)(-90,1.2192)(-90,1.2192)(-90,1.2192)(-90,0.6096)
@@ -266,7 +268,8 @@ def share_points():
             #write_to_i2c(value_to_send)
         # ADJUSTMENTS DONE
 
-            #print("Distance: ", finalDistance)
+            print("Distance: ", finalDistance)
+            value_to_send += 'D' + str(round(finalDistance - boxOffset , 4)) + 'S'
             #print("ANGLE: ", angle)
             #print("POINTS: ", points)
             
