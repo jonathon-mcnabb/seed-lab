@@ -1,4 +1,4 @@
-43# USAGE
+# USAGE
 # python picamera_fps_demo.py
 # python picamera_fps_demo.py --display 1 --log 2
 
