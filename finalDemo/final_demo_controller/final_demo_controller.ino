@@ -14,8 +14,6 @@
 #include <Wire.h>
 
 #include "functions.h"
-#include "phi_controller.h"
-#include "rho_controller.h"
 #include "points_buffer.h"
 
 // Comment out this line of code to only do the first-half of Demo2, i.e. rotate and move to within a foot.
@@ -172,7 +170,7 @@ double turnController(const double currentAngle, const double setAngle) {
 }
 
 // The main loop() has a state machine, so this is the TYPEDEF for that machine.
-typedef enum { SPIN_TO_ARUCO, MOVE_TO_ARUCO, UPDATE_SET_POINT, SPIN_TO_SET_ANGLE, MOVE_TO_SET_RADIUS, HALT_ROBOT } fsm_t;
+typedef enum { SPIN_TO_ARUCO, MOVE_TO_ARUCO, UPDATE_SET_POINT, SPIN_TO_SET_ANGLE, MOVE_TO_SET_RADIUS, SEND_H_TO_PI, IDLE } fsm_t;
 void loop() {
     const unsigned long start_time = millis();
     static fsm_t state = SPIN_TO_ARUCO; // Default state: spin until you see the aruco marker
@@ -296,7 +294,7 @@ void loop() {
         case UPDATE_SET_POINT: {
             // If we've ran out of points, jump to halt.
             if (!has_another_point()) {
-                state = HALT_ROBOT;
+                state = SEND_H_TO_PI;
                 break;
             }
 
@@ -316,8 +314,6 @@ void loop() {
          */
         case SPIN_TO_SET_ANGLE: {
             const double setAngle = piSetAngle;
-
-            Serial.print("Facing set angle\t");
 
             // If we are "close enough" to the actual angle we need to face, then go to MOVE state
             if (withinEpsilon(setAngle, currentAngle, 0.02)) {
@@ -342,8 +338,6 @@ void loop() {
             // Hold the angle steady, while we move steadily forward _to_ the set radiuan
             const double setAngle = piSetAngle;
 
-            Serial.print("Moving to RADIUS\t");
-
             // If we get close enough, head to the next point.
             if (withinEpsilon(currentRadius, piSetRadius, 0.01)) {
                 setMotorsVoltage(0, 0);
@@ -356,17 +350,35 @@ void loop() {
 
             // We use a turn controller to ensure we don't drift from the setAngle
             // While we move at a nominal rate to the set point.
-            const double deltaVa = pController(currentAngle, setAngle, Kp);
+            const double deltaVa = turnController(currentAngle, setAngle); // pController(currentAngle, setAngle, Kp);
             const double Va = NOMINAL_VOLTAGE;
             setMotorsVoltage(Va, deltaVa);
             break;
         }
 
         /**
-         * When we've hit halt, shut off.
+         * When we've ran out of points, send the 'H' and then go to IDLE.
          */
-        case HALT_ROBOT: {
+        case SEND_H_TO_PI: {
+            // TODO: Send the H
+            state = IDLE;
             setMotorsVoltage(0, 0);
+            break;
+        }
+
+        /**
+         * Wait in IDLE until we receive another point
+         */
+        case IDLE: {
+            setMotorsVoltage(0, 0);
+
+            // If we have received another point, go back to UPDATE_SET_POINT
+            if (has_another_point()) {
+                state = UPDATE_SET_POINT;
+                break;
+            }
+
+            state = IDLE;
             break;
         }
 
