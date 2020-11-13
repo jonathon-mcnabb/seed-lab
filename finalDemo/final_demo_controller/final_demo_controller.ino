@@ -194,74 +194,83 @@ void loop() {
         Serial.print("\t");
         Serial.print(currentRadius);
         Serial.print("\t");
+        Serial.print(state);
+        Serial.print("\t");
     #endif
 
     // Then state machine this
     switch (state) {
         case SPIN_TO_ARUCO: {
-            // Assume spin 360-degrees until the PI sends us data
-            // and once it does, remember the old data
-            static double setAngle = 2*PI;
-            static boolean turnOnController = false;
-            static boolean readAnAngleBefore = false;
-            static boolean turnOffMotor = false;
+            typedef enum { NOMINAL_SPIN, WAIT_FOR_ANGLE_TO_STABALIZE, CORRECT_ANGLE } spin_to_aruco_fsm_t;
+            static spin_to_aruco_fsm_t spin_aruco_state = NOMINAL_SPIN;
+            static double setAngle = 0;
 
-            // If we've received and angle from the Pi for the first time, halt movement
-            if (receivedAngleFromPi && !readAnAngleBefore) {
-                receivedAngleFromPi = false;
+            switch (spin_aruco_state) {
+                // Spin at a nominal voltage until we get any reading from the Aruco marker
+                case NOMINAL_SPIN: {
+                    if (receivedAngleFromPi) { // Halt once we've received a single angle and wait to stabalize
+                        setMotorsVoltage(0, 0);
+                        spin_aruco_state = WAIT_FOR_ANGLE_TO_STABALIZE;
+                        break;
+                    }
 
-                Serial.print("Current angle: ");
-                Serial.println(currentAngle);
-                Serial.print("Set angle: ");
-                Serial.println(setAngle);
+                    const double deltaVa = 4;
+                    const double Va = 0;
+                    setMotorsVoltage(Va, deltaVa);
+                    break;
+                }
 
-                turnOffMotor = true;
-                readAnAngleBefore = true;
-            }
+                // Once we've received a single reading, halt and wait for the measurement to stabalize
+                case WAIT_FOR_ANGLE_TO_STABALIZE: {
+                    static double previousMeasurement = 10.0;
 
-            // Then, wait for the angle measurement to stablize before moving again.
-            if (receivedAngleFromPi && readAnAngleBefore && !turnOnController) {
-                static double previousMeasurement = 10.0;
-                receivedAngleFromPi = false;
+                    // If the current measurement is "close enough" to the previous measurement,
+                    // then go to correct angle
+                    if (receivedAngleFromPi) {
+                        if (withinEpsilon(previousMeasurement, angleFromPi, 0.05)) {
+                            // Update the set angle w/ a small correction factor
+                            // either add +0.1 if the pi has overshot and needs to correct
+                            // or subtract 0.05 if the pi has undershot
+                            // These values were found via tuning
+                            setAngle = angleFromPi + (angleFromPi < 0 ? 0.1 : -0.05);
+                            spin_aruco_state = CORRECT_ANGLE;
+                            break;
+                        } else {
+                            // New angle isn't close enough, keep waiting
+                            receivedAngleFromPi = false;
+                            previousMeasurement = angleFromPi;
+                        }
+                    }
 
-                // Stablize ==> the difference between the previous measurement and the current measurement
-                // is extremely small
-                if (withinEpsilon(previousMeasurement, angleFromPi, 0.005)) {
-                    setAngle = angleFromPi + (angleFromPi < 0 ? 0.1 : -0.05);
-                    turnOnController = true;
-                    turnOffMotor = false;
-                } else {
-                    receivedAngleFromPi = false;
-                    previousMeasurement = angleFromPi;
-                    turnOffMotor = true;
+                    // Since we're not moving, keep the encoder counts at 0
                     rightWheel1.write(0);
                     leftWheel2.write(0);
+
+                    setMotorsVoltage(0, 0);
+                    break;
+                }
+
+                // Once the angle has stabalized, go to the correct angle
+                case CORRECT_ANGLE: {
+                    // If we get close enough, call it good and go to MOVE_TO_ARUCO.
+                    if (withinEpsilon(setAngle, currentAngle, 0.01)) {
+                        setMotorsVoltage(0, 0);
+                        state = MOVE_TO_ARUCO;
+                        break;
+                    }
+
+                    const double deltaVa = turnController(currentAngle, setAngle);
+                    const double Va = 0;
+                    setMotorsVoltage(deltaVa, Va);
+                    break;
+                }
+
+                default: {
+                    Serial.println("SPIN_TO_ARUCO FSM hit default??\r\n");
+                    break;
                 }
             }
 
-            // If we're "close enough", go to UPDATE_SET_POINT
-            if (withinEpsilon(setAngle, currentAngle, 0.01)) {
-                setMotorsVoltage(0, 0);
-                state = MOVE_TO_ARUCO;
-                break;
-            }
-
-            // Spin us to the set angle
-            Serial.print("Current angle: ");
-            Serial.println(currentAngle);
-            Serial.print("Set angle: ");
-            Serial.println(setAngle);
-
-            // We either spin at a constant rate (deltaVa = 4.0)
-            // or spin to the set angle, based on whether we have a reliable angle from the pi.
-            const double deltaVa = (turnOnController ? turnController(currentAngle, setAngle) : 4.0);
-            const double Va = 0;
-
-            if (turnOffMotor) {
-                setMotorsVoltage(0, 0);
-            } else {
-                setMotorsVoltage(Va, deltaVa);
-            }
             break;
         }
 
