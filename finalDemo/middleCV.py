@@ -52,7 +52,6 @@ aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
 
 def process_frame(frame, frame_number):
-    start = time.time()
     global last_sent
     if frame_number < last_sent:
         print("[INFO] skipping frame in process_frame")
@@ -89,9 +88,10 @@ def process_frame(frame, frame_number):
             else:
                 x_angle = 0
 
-            x_angle  = round(x_angle - 3.80594, 4)
+            x_angle  = round(x_angle, 4)
 
             value_to_send = 'A' + str(x_angle)
+            print(value_to_send)
         elif state is "d":
             deltaY1 = abs(cornerFour[1] - cornerOne[1])
             deltaY2 = abs(cornerThree[1] - cornerTwo[1])
@@ -108,8 +108,6 @@ def process_frame(frame, frame_number):
         if value_to_send is not "":
             t1 = threading.Thread(target=write_to_i2c, name="send", args=(bus, value_to_send,frame_number))
             t1 .start()
-    end = time.time()
-    print(end - start)
 
 
 # construct the argument parse and parse the arguments
