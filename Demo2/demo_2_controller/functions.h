@@ -1,5 +1,9 @@
 /**
  * To clean up the main file a little bit, this file exists to pull out generic functions.
+ *
+ * @author: Luke Henke
+ *
+ * Class: SEED lab
  */
 
 // This file is included in multiple areas, so prevent redeclaration errors
@@ -20,6 +24,14 @@ double calculateV2(double Va, double deltaVa) {
     return (Va - deltaVa) / 2.0;
 }
 
+/**
+ * These two functions allow for the controller to be turned off
+ * once the robot gets "close enough", i.e., it's "within epsilon"
+ * of the set point
+ * @param  currVal Current value
+ * @param  setVal  Set Value
+ * @return         true or false
+ */
 bool withinEpsilon(double currVal, double setVal) {
     return fabs(currVal - setVal) <= EPSILON;
 }
@@ -58,15 +70,10 @@ double pController(double newVal, double setVal, double Kp) {
  * @return        the result of the i-term
  */
 double iController(double newVal, double setVal, double& sum, double Ki) {
-    if (fabs(newVal - setVal) > 0.4) {
+    if (fabs(newVal - setVal) > 0.5) {
         sum = 0;
         return 0;
     }
-
-    // if (abs(newVal - setVal) <= 0.01) {
-    //     sum = 0;
-    //     // return 0;
-    // }
 
     sum += (setVal - newVal); // update sum with the new error
 
@@ -75,10 +82,6 @@ double iController(double newVal, double setVal, double& sum, double Ki) {
     } else if (sum < -1*SUM_MAX) {
         sum = -1*SUM_MAX;
     }
-
-    // Serial.print("s: ");
-    // Serial.print(sum);
-    // Serial.print("\t");
     return Ki * sum * PERIOD / 1e3; // ?? I think I need to convert to seconds?
 }
 
