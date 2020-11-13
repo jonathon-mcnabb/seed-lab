@@ -40,8 +40,7 @@
 #define WHEEL_1_BACKWARD HIGH
 
 #define WHEEL_RADIUS 0.0762 // METERS, 3 inches
-// about 14.5 inches
-#define DISTANCE_B_W_WHEELS (0.42)
+#define DISTANCE_B_W_WHEELS (0.2794) // METERS
 
 #define PERIOD 10 // in MS
 #define BATTERY_MAX_VOLTAGE 8.2
