@@ -53,16 +53,16 @@ def read_from_i2c(bus):
     pass
 
 bufferSize = 1024
-UDPClientSocket = socket.socket.(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 def send_to_server(msg):
     bytesToSend = str.encode(msg)
     global serverAddressPort
     UDPClientSocket.sendto(bytesToSend, serverAddressPort)
 
-socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 def read_from_client():
-    socket.bind(serverAddressPort)
-    data, addr = socket.recvfrom(1024)
+    socket2.bind(serverAddressPort)
+    data, addr = socket2.recvfrom(1024)
     return data
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
@@ -112,15 +112,12 @@ def process_frame(frame, frame_number):
             right_offset = 38.6598
             if this_pi == "left":
                 x_angle = left_offset + x_angle
-                value_to_send = 'AL' + str((round(x_angle, 4))
-                send_to_server(value_to_send)
+                value_to_send = 'AL' + str(round(x_angle, 4))
             elif this_pi == "middle":
                 x_angle = x_angle - middle_offset
-                value_to_send = 'A' + str(round(x_angle, 4))
             elif this_pi == "right":
                 x_angle = -1*(right_offset - x_angle)
                 value_to_send = 'AR' + str(round(x_angle, 4))
-                send_to_server(value_to_send)
             print(value_to_send)
         elif state is "d":
             deltaY1 = abs(cornerFour[1] - cornerOne[1])
@@ -136,8 +133,9 @@ def process_frame(frame, frame_number):
 
             value_to_send = 'D' + str(finalDistance)
         if value_to_send is not "":
-            t1 = threading.Thread(target=write_to_i2c, name="send", args=(bus, value_to_send,frame_number))
-            t1 .start()
+            if this_pi != "middle":
+                t1 = threading.Thread(target=send_to_server, name="send", args=(value_to_send,))
+                t1 .start()
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
