@@ -70,6 +70,8 @@ def share_points():
         gray = aruco.drawDetectedMarkers(gray, corners, ids)
 
         height, width, _ = gray.shape
+
+        print(height, width)
         deltaX = 0
         deltaY = 0
 

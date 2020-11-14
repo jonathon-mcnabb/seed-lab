@@ -96,15 +96,15 @@ def process_frame(frame, frame_number):
             # depending on what pi is running, change the angle accordingly
             left_offset = 35
             middle_offset = 3.80594
-            right_offset = 35
+            right_offset = 38.6598
             if this_pi == "left":
                 x_angle = x_angle - left_offset
             elif this_pi == "middle":
                 x_angle = x_angle - middle_offset
             elif this_pi == "right":
-                x_angle = x_angle - right_offset
+                x_angle = right_offset - x_angle
             value_to_send = 'A' + str(x_angle)
-            print(value _to_send)
+            print(value_to_send)
         elif state is "d":
             deltaY1 = abs(cornerFour[1] - cornerOne[1])
             deltaY2 = abs(cornerThree[1] - cornerTwo[1])
@@ -141,13 +141,19 @@ right = "right"
 
 this_pi = socket.gethostname()
 
+print("[CONFIG] Enter middle pi ip address (format -> 138.67.xxx.xxx) :")
+middle_ip = input()
+
+if args["log"] > 0:
+    print("\nIP Entered: " + middle_ip)
+
 if args["log"] > 0:
     print("This is the " + this_pi + " camera pi")
 # initialize the camera and stream
 camera = PiCamera()
-camera.resolution = (1296, 730)
+camera.resolution = (640, 480)
 camera.framerate = 32
-rawCapture = PiRGBArray(camera, size=(1296, 730))
+rawCapture = PiRGBArray(camera, size=(640, 480))
 stream = camera.capture_continuous(rawCapture, format="bgr",
 	use_video_port=True)
 
@@ -177,10 +183,10 @@ if args["test"] is 1:
         frame = vs.read()
         t1 = threading.Thread(target=process_frame, name="process_frame", args=(frame,frame_number ))
         t1.start()
-        frame = imutils.resize(frame, width=400)
+        small_frame = imutils.resize(frame, width=640)
         # check to see if the frame should be displayed to our screen
         if args["display"] > 0:
-            cv2.imshow("Frame", frame)
+            cv2.imshow("Frame", small_frame)
             key = cv2.waitKey(1) & 0xFF
 
         # update the FPS counter
@@ -189,11 +195,12 @@ if args["test"] is 1:
 else:
     while True:
         frame = vs.read()
+        frame = imutils.resize(frame, width=640)
         t1 = threading.Thread(target=process_frame, name="process_frame", args=(frame, frame_number))
         t1.start()
-        frame = imutils.resize(frame, width=400)
+        small_frame = imutils.resize(frame, width=400)
         if args["display"] > 0:
-            cv2.imshow("Frame", frame)
+            cv2.imshow("Frame", small_frame)
             key = cv2.waitKey(1) & 0xFF
         frame_number = frame_number + 1
 # stop the timer and display FPS information
