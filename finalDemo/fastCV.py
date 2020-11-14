@@ -51,6 +51,12 @@ def write_to_i2c(bus, value, frame_number):
 def read_from_i2c(bus):
     pass
 
+bufferSize = 1024
+UDPClientSocket = socket.socket.(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+def send_to_server(msg):
+    bytesToSend = str.encode(msg)
+    global serverAddressPort
+    UDPClientSocket.sendto(bytesToSend, serverAddressPort)
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
@@ -94,16 +100,16 @@ def process_frame(frame, frame_number):
                 x_angle = 0
 
             # depending on what pi is running, change the angle accordingly
-            left_offset = 35
-            middle_offset = 3.80594
+            left_offset = 34.5085
+            middle_offset = 3.9232
             right_offset = 38.6598
             if this_pi == "left":
-                x_angle = x_angle - left_offset
+                x_angle = left_offset + x_angle
             elif this_pi == "middle":
                 x_angle = x_angle - middle_offset
             elif this_pi == "right":
-                x_angle = right_offset - x_angle
-            value_to_send = 'A' + str(x_angle)
+                x_angle = -1*(right_offset - x_angle)
+            value_to_send = 'A' + str(round(x_angle, 4))
             print(value_to_send)
         elif state is "d":
             deltaY1 = abs(cornerFour[1] - cornerOne[1])
@@ -143,6 +149,8 @@ this_pi = socket.gethostname()
 
 print("[CONFIG] Enter middle pi ip address (format -> 138.67.xxx.xxx) :")
 middle_ip = input()
+
+serverAddressPort = (middle_ip, 4210)
 
 if args["log"] > 0:
     print("\nIP Entered: " + middle_ip)
