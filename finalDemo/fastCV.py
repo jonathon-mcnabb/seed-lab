@@ -95,7 +95,7 @@ def process_frame(frame, frame_number):
 
             # depending on what pi is running, change the angle accordingly
             left_offset = 34.5085
-            middle_offset = 3.80594
+            middle_offset = 3.9232
             right_offset = 38.6598
             if this_pi == "left":
                 x_angle = left_offset + x_angle
@@ -103,7 +103,7 @@ def process_frame(frame, frame_number):
                 x_angle = x_angle - middle_offset
             elif this_pi == "right":
                 x_angle = -1*(right_offset - x_angle)
-            value_to_send = 'A' + str(x_angle)
+            value_to_send = 'A' + str(round(x_angle, 4))
             print(value_to_send)
         elif state is "d":
             deltaY1 = abs(cornerFour[1] - cornerOne[1])
