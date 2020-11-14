@@ -94,15 +94,15 @@ def process_frame(frame, frame_number):
                 x_angle = 0
 
             # depending on what pi is running, change the angle accordingly
-            left_offset = 35
+            left_offset = 34.5085
             middle_offset = 3.80594
             right_offset = 38.6598
             if this_pi == "left":
-                x_angle = x_angle - left_offset
+                x_angle = left_offset + x_angle
             elif this_pi == "middle":
                 x_angle = x_angle - middle_offset
             elif this_pi == "right":
-                x_angle = right_offset - x_angle
+                x_angle = -1*(right_offset - x_angle)
             value_to_send = 'A' + str(x_angle)
             print(value_to_send)
         elif state is "d":
