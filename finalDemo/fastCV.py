@@ -14,6 +14,7 @@ import cv2
 from cv2 import aruco
 import threading
 import socket
+import requests
 from smbus import SMBus
 
 try:
@@ -57,6 +58,12 @@ def send_to_server(msg):
     bytesToSend = str.encode(msg)
     global serverAddressPort
     UDPClientSocket.sendto(bytesToSend, serverAddressPort)
+
+socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+def read_from_client():
+    socket.bind(serverAddressPort)
+    data, addr = socket.recvfrom(1024)
+    return data
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
@@ -105,11 +112,15 @@ def process_frame(frame, frame_number):
             right_offset = 38.6598
             if this_pi == "left":
                 x_angle = left_offset + x_angle
+                value_to_send = 'AL' + str((round(x_angle, 4))
+                send_to_server(value_to_send)
             elif this_pi == "middle":
                 x_angle = x_angle - middle_offset
+                value_to_send = 'A' + str(round(x_angle, 4))
             elif this_pi == "right":
                 x_angle = -1*(right_offset - x_angle)
-            value_to_send = 'A' + str(round(x_angle, 4))
+                value_to_send = 'AR' + str(round(x_angle, 4))
+                send_to_server(value_to_send)
             print(value_to_send)
         elif state is "d":
             deltaY1 = abs(cornerFour[1] - cornerOne[1])
@@ -147,10 +158,13 @@ right = "right"
 
 this_pi = socket.gethostname()
 
-print("[CONFIG] Enter middle pi ip address (format -> 138.67.xxx.xxx) :")
-middle_ip = input()
-
-serverAddressPort = (middle_ip, 4210)
+if this_pi != middle:
+    print("[CONFIG] Enter middle pi ip address (format -> 138.67.xxx.xxx) :")
+    middle_ip = input()
+    serverAddressPort = (middle_ip, 4210)
+else:
+    ip = requests.get('https://checkip.amazonaws.com').text.strip()
+    serverAddressPort = (ip, 4210)
 
 if args["log"] > 0:
     print("\nIP Entered: " + middle_ip)
@@ -211,6 +225,8 @@ else:
             cv2.imshow("Frame", small_frame)
             key = cv2.waitKey(1) & 0xFF
         frame_number = frame_number + 1
+        if frame_number % 3 == 0:
+            print(read_from_client())
 # stop the timer and display FPS information
 fps.stop()
 if args["log"] > 0:
