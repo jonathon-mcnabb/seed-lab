@@ -13,7 +13,7 @@ import time
 import cv2
 from cv2 import aruco
 import threading
-
+import socket
 from smbus import SMBus
 
 try:
@@ -29,6 +29,10 @@ last_sent = 0
 state = "a"
 
 def write_to_i2c(bus, value, frame_number):
+    global this_pi
+    global middle
+    if this_pi != middle:
+        return
     global last_sent
     if frame_number < last_sent:
         #print("[INFO] skipping frame in write_to_i2c")
@@ -52,13 +56,13 @@ aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
 
 def process_frame(frame, frame_number):
-    start = time.time()
     global last_sent
     if frame_number < last_sent:
         print("[INFO] skipping frame in process_frame")
         return
     corners, ids, _ = aruco.detectMarkers(frame, aruco_dict, parameters=parameters)
     if len(corners):
+        global this_pi
         height, width, _ = frame.shape
         value_to_send = ""
         global state
@@ -89,9 +93,18 @@ def process_frame(frame, frame_number):
             else:
                 x_angle = 0
 
-            x_angle  = round(x_angle - 3.80594, 4)
-
+            # depending on what pi is running, change the angle accordingly
+            left_offset = 35
+            middle_offset = 3.80594
+            right_offset = 35
+            if this_pi == "left":
+                x_angle = x_angle - left_offset
+            elif this_pi == "middle":
+                x_angle = x_angle - middle_offset
+            elif this_pi == "right":
+                x_angle = x_angle - right_offset
             value_to_send = 'A' + str(x_angle)
+            print(value _to_send)
         elif state is "d":
             deltaY1 = abs(cornerFour[1] - cornerOne[1])
             deltaY2 = abs(cornerThree[1] - cornerTwo[1])
@@ -108,9 +121,6 @@ def process_frame(frame, frame_number):
         if value_to_send is not "":
             t1 = threading.Thread(target=write_to_i2c, name="send", args=(bus, value_to_send,frame_number))
             t1 .start()
-    end = time.time()
-    print(end - start)
-
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -124,6 +134,15 @@ ap.add_argument("-t", "--test", type=int, default=0,
     help="set to 1 if testing frames")
 args = vars(ap.parse_args())
 
+left = "left"
+middle = "middle"
+right = "right"
+# figure out what pi this is
+
+this_pi = socket.gethostname()
+
+if args["log"] > 0:
+    print("This is the " + this_pi + " camera pi")
 # initialize the camera and stream
 camera = PiCamera()
 camera.resolution = (1296, 730)
