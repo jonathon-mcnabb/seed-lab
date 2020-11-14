@@ -51,6 +51,12 @@ def write_to_i2c(bus, value, frame_number):
 def read_from_i2c(bus):
     pass
 
+bufferSize = 1024
+UDPClientSocket = socket.socket.(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+def send_to_server(msg):
+    bytesToSend = str.encode(msg)
+    global serverAddressPort
+    UDPClientSocket.sendto(bytesToSend, serverAddressPort)
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
@@ -143,6 +149,8 @@ this_pi = socket.gethostname()
 
 print("[CONFIG] Enter middle pi ip address (format -> 138.67.xxx.xxx) :")
 middle_ip = input()
+
+serverAddressPort = (middle_ip, 4210)
 
 if args["log"] > 0:
     print("\nIP Entered: " + middle_ip)
