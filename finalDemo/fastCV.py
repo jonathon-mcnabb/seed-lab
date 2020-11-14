@@ -60,8 +60,9 @@ def send_to_server(msg):
     UDPClientSocket.sendto(bytesToSend, serverAddressPort)
 
 socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+socket2.bind(clientAddressPort)
 def read_from_client():
-    socket2.bind(serverAddressPort)
+    socket2.bind(clientAddressPort)
     data, addr = socket2.recvfrom(1024)
     return data
 
@@ -160,9 +161,8 @@ if this_pi != middle:
     print("[CONFIG] Enter middle pi ip address (format -> 138.67.xxx.xxx) :")
     middle_ip = input()
     serverAddressPort = (middle_ip, 4210)
-else:
-    ip = requests.get('https://checkip.amazonaws.com').text.strip()
-    serverAddressPort = (ip, 4210)
+ip = requests.get('https://checkip.amazonaws.com').text.strip()
+client_address = (ip, 4210)
 
 if args["log"] > 0:
     print("\nIP Entered: " + middle_ip)
@@ -224,7 +224,8 @@ else:
             key = cv2.waitKey(1) & 0xFF
         frame_number = frame_number + 1
         if frame_number % 3 == 0:
-            print(read_from_client())
+            if this_pi == "middle":
+                print(read_from_client())
 # stop the timer and display FPS information
 fps.stop()
 if args["log"] > 0:
