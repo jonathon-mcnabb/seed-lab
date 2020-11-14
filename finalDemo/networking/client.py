@@ -4,7 +4,10 @@ msgFromClient = "A-11.938"
 
 bytesToSend = str.encode(msgFromClient)
 
-serverAddressPort = ("138.67.201.108", 4210)
+print("enter server ip")
+ip = input()
+
+serverAddressPort = (ip, 4210)
 
 bufferSize = 1024
 
