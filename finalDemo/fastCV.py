@@ -60,7 +60,7 @@ def send_to_server(msg):
     UDPClientSocket.sendto(bytesToSend, serverAddressPort)
 
 def read_from_client():
-    socket2.bind(clientAddressPort)
+    #socket2.bind(clientAddressPort)
     data, addr = socket2.recvfrom(1024)
     return data
 
