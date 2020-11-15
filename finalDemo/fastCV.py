@@ -59,8 +59,6 @@ def send_to_server(msg):
     global serverAddressPort
     UDPClientSocket.sendto(bytesToSend, serverAddressPort)
 
-socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-socket2.bind(clientAddressPort)
 def read_from_client():
     socket2.bind(clientAddressPort)
     data, addr = socket2.recvfrom(1024)
@@ -163,6 +161,9 @@ if this_pi != middle:
     serverAddressPort = (middle_ip, 4210)
 ip = requests.get('https://checkip.amazonaws.com').text.strip()
 client_address = (ip, 4210)
+socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+socket2.bind(clientAddressPort)
+
 
 if args["log"] > 0:
     print("\nIP Entered: " + middle_ip)
