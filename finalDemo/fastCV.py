@@ -159,16 +159,12 @@ if this_pi != middle:
     print("[CONFIG] Enter middle pi ip address (format -> 138.67.xxx.xxx) :")
     middle_ip = input()
     serverAddressPort = (middle_ip, 4210)
-ip = requests.get('https://checkip.amazonaws.com').text.strip()
-client_address = (ip, 4210)
-
 if this_pi == middle:
+    ip = requests.get('https://checkip.amazonaws.com').text.strip()
+    client_address = (ip, 4210)
     socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     socket2.bind(client_address)
-
-
-if args["log"] > 0:
-    print("\nIP Entered: " + middle_ip)
+    print("Middle IP: ", ip)
 
 if args["log"] > 0:
     print("This is the " + this_pi + " camera pi")
