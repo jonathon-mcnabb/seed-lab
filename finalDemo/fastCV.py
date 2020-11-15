@@ -132,9 +132,9 @@ def process_frame(frame, frame_number):
 
             value_to_send = 'D' + str(finalDistance)
         if value_to_send is not "":
-            if this_pi != "middle":
+            if this_pi != "middle" and frame_number % 3 == 0:
                 t1 = threading.Thread(target=send_to_server, name="send", args=(value_to_send,))
-                t1 .start()
+                t1.start()
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
