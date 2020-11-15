@@ -161,8 +161,10 @@ if this_pi != middle:
     serverAddressPort = (middle_ip, 4210)
 ip = requests.get('https://checkip.amazonaws.com').text.strip()
 client_address = (ip, 4210)
-socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-socket2.bind(clientAddressPort)
+
+if this_pi == middle:
+    socket2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    socket2.bind(client_address)
 
 
 if args["log"] > 0:
