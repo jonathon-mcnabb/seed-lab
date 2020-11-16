@@ -98,16 +98,15 @@ def process_frame(frame, frame_number):
         height, width, _ = frame.shape
         value_to_send = ""
         global request
+        middle_x = int(width / 2)
+        middle_y = int(height / 2)
+        marker_one = corners[0][0]
+
+        corner_one = marker_one[0]
+        corner_two = marker_one[1]
+        corner_three = marker_one[2]
+        corner_four = marker_one[3]
         if "a" in request:
-            middle_x = int(width / 2)
-            middle_y = int(height / 2)
-            marker_one = corners[0][0]
-
-            corner_one = marker_one[0]
-            corner_two = marker_one[1]
-            corner_three = marker_one[2]
-            corner_four = marker_one[3]
-
             center_x1 = ((corner_two[0] + corner_four[0]) / 2)
             center_x2 = ((corner_one[0] + corner_three[0]) / 2)
 
@@ -138,8 +137,8 @@ def process_frame(frame, frame_number):
                 x_angle = -1*(right_offset - x_angle)
                 value_to_send = 'AR' + str(round(x_angle, 4)) + 'S'
         if "d" in request:
-            deltaY1 = abs(cornerFour[1] - cornerOne[1])
-            deltaY2 = abs(cornerThree[1] - cornerTwo[1])
+            deltaY1 = abs(corner_four[1] - corner_one[1])
+            deltaY2 = abs(corner_three[1] - corner_two[1])
 
             arucoHeight = (deltaY1 + deltaY2) / 2
 
