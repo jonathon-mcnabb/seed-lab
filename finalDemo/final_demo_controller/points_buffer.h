@@ -41,3 +41,18 @@ void clear_point_queue() {
         pointQueue.dequeue();
     }
 }
+
+/**
+ * Adds a point to the queue
+ * @param rho rho / radius, meters
+ * @param phi phi / angle, radians
+ */
+void add_point_to_buffer(const double rho, const double phi) {
+    pointQueue.enqueue({ rho, phi });
+
+    Serial.print("Added: ");
+    Serial.print(rho);
+    Serial.print(", ");
+    Serial.print(phi);
+    Serial.println(" to the buffer");
+}

@@ -12,7 +12,6 @@
 #include <ArduinoQueue.h> // for using a queue.
 #include <math.h>
 #include <Wire.h>
-#include <regex.h>
 
 #include "functions.h"
 #include "points_buffer.h"
@@ -23,9 +22,6 @@
 // Setup the wheel encoder.
 Encoder rightWheel1(A_1_PIN, B_1_PIN); // right wheel is wheel #1
 Encoder leftWheel2(A_2_PIN, B_2_PIN);
-regex_t compiled_regex;
-regmatch_t *matched_groups;
-size_t num_groups;
 
 void setup() {
     pinMode(MOTOR_1_PWM, OUTPUT);
@@ -46,16 +42,6 @@ void setup() {
     // Setup I2C comms
     Wire.begin(0x8);
     Wire.onReceive(fromI2C);
-
-    // Setup the regular expression matcher
-    if (regcomp(&compiled_regex, "(\((\d+.\d+),(\d+.\d+)\))", REG_EXTENDED) != 0) {
-        Serial.print("Regular expression compile failed! Error message: ");
-        Serial.println();
-    }
-
-    // To build the array of matched groups, we need to know the number.
-    num_groups = compiled_regex.re_nsub + 1;
-    matched_groups = malloc(num_groups * sizeof(regmatch_t));
 }
 
 
@@ -76,6 +62,7 @@ bool receivedDistanceFromPi = false;
  */
 void fromI2C(const size_t byteCount) {
     static char buffer[64];
+    static char match_buffer[20];
     static size_t i = 0;
     static boolean seenAStartBit = false;
     boolean parseNumber = false;
@@ -140,35 +127,79 @@ void fromI2C(const size_t byteCount) {
 
             // Parse the points
             case 'P':
-                while (true) {
-                    int result = regexec(&regex, buffer+1, num_groups, matched_groups, 0);
-                }
-
                 // DFA for the regular expression: \((\d+.\d+),(\d+.\d+)\)
-                // typedef enum {MATCH_LEFT, MATCH_UNTIL_COMMA, MATCH_UNTIL_RIGHT} regex_fsm_t;
-                // regex_fsm_t regex_state = MATCH_LEFT;
-                // bool matchError = false;
-                // size_t matchIndex = 1; // Skip the 'P'
-                //
-                //
-                // while (buffer[matchIndex] != '0' && !matchError) {
-                //     switch (regex_state) {
-                //         // Match '(' then move on else error
-                //         case MATCH_LEFT: {
-                //             if (buffer[matchIndex] == '(') {
-                //                 regex_state = MATCH_UNTIL_COMMA;
-                //                 matchIndex ++;
-                //             } else {
-                //                 matchError = true;
-                //             }
-                //
-                //             break;
-                //         }
-                //
-                //         // Track the indices until we get to a ',', then match
-                //         case
-                //     }
-                // }
+                typedef enum {MATCH_LEFT, MATCH_UNTIL_COMMA, MATCH_UNTIL_RIGHT} regex_fsm_t;
+                regex_fsm_t regex_state = MATCH_LEFT;
+                bool matchError = false;
+                size_t matchIndex = 1; // Skip the 'P'
+                size_t matchBufferIndex = 0;
+                double parsed_rho = 0.0;
+                double parsed_phi = 0.0;
+
+                // Match until we run out of matches
+                while (buffer[matchIndex] != '0' && !matchError) {
+                    switch (regex_state) {
+                        // Match '(' then move on else error
+                        case MATCH_LEFT: {
+                            if (buffer[matchIndex] == '(') {
+                                regex_state = MATCH_UNTIL_COMMA;
+                                matchBufferIndex = 0;
+                                matchIndex ++;
+                            } else {
+                                matchError = true;
+                            }
+
+                            break;
+                        }
+
+                        // Track the indices until we get to a ',', then match
+                        case MATCH_UNTIL_COMMA: {
+                            //  Once we see a comma, we've finished the rho match
+                            if (buffer[matchIndex] == ',') {
+                                // Add the '\0' to terminate this string, then strtod()
+                                match_buffer[matchBufferIndex] = '\0';
+                                parsed_rho = strtod(match_buffer, nullptr);
+
+                                regex_state = MATCH_UNTIL_RIGHT;
+                                matchIndex ++;
+                                matchBufferIndex = 0;
+                                break;
+                            }
+
+                            match_buffer[matchBufferIndex] = buffer[matchIndex];
+                            matchBufferIndex++;
+                            matchIndex ++;
+                            break;
+                        }
+
+                        // Track until we hit a ')', then match
+                        case MATCH_UNTIL_RIGHT: {
+                            if (buffer[matchIndex] == ')') {
+                                // Add the '\0' to terminate this string, then strtod()
+                                match_buffer[matchBufferIndex] = '\0';
+                                parsed_phi = strtod(match_buffer, nullptr);
+
+                                // Add the point
+                                add_point_to_buffer(parsed_rho, parsed_phi);
+
+                                regex_state = MATCH_LEFT;
+                                matchBufferIndex = 0;
+                                matchIndex ++;
+                                break;
+                            }
+
+                            match_buffer[matchBufferIndex] = buffer[matchIndex];
+                            matchBufferIndex++;
+                            matchIndex ++;
+                            break;
+                        }
+
+                        default: {
+                            Serial.println("regex_fsm_t hit default???\r\n");
+                            break;
+                        }
+                    }
+                }
 
 
         }
