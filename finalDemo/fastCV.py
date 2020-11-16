@@ -71,15 +71,16 @@ def read_from_client():
     rightDistance = None
     for i in range(3):
         data, addr = socket2.recvfrom(1024)
-        index = data.find('S')
+        data = data.decode("utf-8")
+        index = data.find("S")
         if data[0:2] == "AL":
             leftAngle = data[2:index]
         elif data[0:2] == "AR":
             rightAngle = data[2:index]
         if data[index+1:index+3] == "DL":
-            leftDistance = data[index+3:data.len()-2]
+            leftDistance = data[index+3:len(data)-2]
         elif data[index+1:index+3] == "DR":
-            rightDistance = data[index+3:data.len()-2]
+            rightDistance = data[index+3:len(data)-2]
     return leftAngle, rightAngle, leftDistance, rightDistance
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
@@ -93,21 +94,20 @@ def process_frame(frame, frame_number):
     corners, ids, _ = aruco.detectMarkers(frame, aruco_dict, parameters=parameters)
     x_angle = None
     finalDistance = None
+    global this_pi
     if len(corners):
-        global this_pi
         height, width, _ = frame.shape
         value_to_send = ""
         global request
+        middle_x = int(width / 2)
+        middle_y = int(height / 2)
+        marker_one = corners[0][0]
+
+        corner_one = marker_one[0]
+        corner_two = marker_one[1]
+        corner_three = marker_one[2]
+        corner_four = marker_one[3]
         if "a" in request:
-            middle_x = int(width / 2)
-            middle_y = int(height / 2)
-            marker_one = corners[0][0]
-
-            corner_one = marker_one[0]
-            corner_two = marker_one[1]
-            corner_three = marker_one[2]
-            corner_four = marker_one[3]
-
             center_x1 = ((corner_two[0] + corner_four[0]) / 2)
             center_x2 = ((corner_one[0] + corner_three[0]) / 2)
 
@@ -138,8 +138,8 @@ def process_frame(frame, frame_number):
                 x_angle = -1*(right_offset - x_angle)
                 value_to_send = 'AR' + str(round(x_angle, 4)) + 'S'
         if "d" in request:
-            deltaY1 = abs(cornerFour[1] - cornerOne[1])
-            deltaY2 = abs(cornerThree[1] - cornerTwo[1])
+            deltaY1 = abs(corner_four[1] - corner_one[1])
+            deltaY2 = abs(corner_three[1] - corner_two[1])
 
             arucoHeight = (deltaY1 + deltaY2) / 2
 
@@ -157,13 +157,14 @@ def process_frame(frame, frame_number):
             if this_pi != "middle" and frame_number % 3 == 0:
                 t1 = threading.Thread(target=send_to_server, name="send", args=(value_to_send,))
                 t1.start()
-
+    print(frame_number)
     if frame_number % 3 == 0:
         if this_pi == "middle":
             leftAngle, rightAngle, leftDistance, rightDistance = read_from_client()
             middleAngle = x_angle
             middleDistance = finalDistance
 
+            print("left: ", leftAngle, "right: ", rightAngle)
             # parse though read_from_client()
             EXTRA_ANGLE = np.radians(0)
             angle_to_spin_while_finding = 1.5708 + EXTRA_ANGLE # right turn 90 deg in radians + EXTRA_ANGLE
@@ -290,8 +291,11 @@ else:
     while True:
         frame = vs.read()
         frame = imutils.resize(frame, width=640)
-        t1 = threading.Thread(target=process_frame, name="process_frame", args=(frame, frame_number))
-        t1.start()
+        try:
+            t1 = threading.Thread(target=process_frame, name="process_frame", args=(frame, frame_number))
+            t1.start()
+        except:
+            pass
         small_frame = imutils.resize(frame, width=400)
         if args["display"] > 0:
             cv2.imshow("Frame", small_frame)
