@@ -64,8 +64,23 @@ def send_to_server(msg):
     UDPClientSocket.sendto(bytesToSend, serverAddressPort)
 
 def read_from_client():
-    data, addr = socket2.recvfrom(1024)
-    return data
+    messages = []
+    leftAngle = None
+    rightAngle = None
+    leftDistance = None
+    rightDistance = None
+    for i in range(3):
+        data, addr = socket2.recvfrom(1024)
+        index = data.find('S')
+        if data[0:2] == "AL":
+            leftAngle = data[2:index]
+        elif data[0:2] == "AR":
+            rightAngle = data[2:index]
+        if data[index+1:index+3] == "DL":
+            leftDistance = data[index+3:data.len()-2]
+        elif data[index+1:index+3] == "DR":
+            rightDistance = data[index+3:data.len()-2]
+    return leftAngle, rightAngle, leftDistance, rightDistance
 
 aruco_dict = aruco.Dictionary_get(aruco.DICT_6X6_250)
 parameters = aruco.DetectorParameters_create()
@@ -83,7 +98,7 @@ def process_frame(frame, frame_number):
         height, width, _ = frame.shape
         value_to_send = ""
         global request
-        if request is "a":
+        if "a" in request:
             middle_x = int(width / 2)
             middle_y = int(height / 2)
             marker_one = corners[0][0]
@@ -116,14 +131,13 @@ def process_frame(frame, frame_number):
             right_offset = 38.6598
             if this_pi == "left":
                 x_angle = left_offset + x_angle
-                value_to_send = 'AL' + str(round(x_angle, 4))
+                value_to_send = 'AL' + str(round(x_angle, 4)) + 'S'
             elif this_pi == "middle":
                 x_angle = x_angle - middle_offset
             elif this_pi == "right":
                 x_angle = -1*(right_offset - x_angle)
-                value_to_send = 'AR' + str(round(x_angle, 4))
-            print(value_to_send)
-        elif request is "d":
+                value_to_send = 'AR' + str(round(x_angle, 4)) + 'S'
+        if "d" in request:
             deltaY1 = abs(cornerFour[1] - cornerOne[1])
             deltaY2 = abs(cornerThree[1] - cornerTwo[1])
 
@@ -134,22 +148,20 @@ def process_frame(frame, frame_number):
             y = 0.0038
             finalDistance = f*(screenHeight / y)
             finalDistance = round(finalDistance, 4)
-
-            value_to_send = 'D' + str(finalDistance)
+            if this_pi == "left":
+                value_to_send = value_to_send + 'DL' + str(finalDistance) + 'S'
+            elif this_pi == "right":
+                value_to_send = value_to_send +  'DR' + str(finalDistance) + 'S'
         if value_to_send is not "":
+            print("Value to send: ", value_to_send)
             if this_pi != "middle" and frame_number % 3 == 0:
                 t1 = threading.Thread(target=send_to_server, name="send", args=(value_to_send,))
                 t1.start()
 
     if frame_number % 3 == 0:
         if this_pi == "middle":
-            print(read_from_client())
-            leftAngle = None
-            rightAngle = None
+            leftAngle, rightAngle, leftDistance, rightDistance = read_from_client()
             middleAngle = x_angle
-
-            leftDistance = None
-            rightDistance = None
             middleDistance = finalDistance
 
             # parse though read_from_client()
@@ -159,7 +171,7 @@ def process_frame(frame, frame_number):
             # this is where we actually are going to handle states
 
             # i is the state to find the first beacon
-            if state = "i":
+            if state == "i":
                 # initial marker
 
                 # 1) spin clockwise until initial marker is found
@@ -195,7 +207,7 @@ def process_frame(frame, frame_number):
 
 
             # b state is to find all other beacons
-            elif state = "b":
+            elif state == "b":
                 pass
 
 # construct the argument parse and parse the arguments
@@ -257,7 +269,7 @@ fps = FPS().start()
 
 frame_number = 0
 state = "i"
-request = "a"
+request = "ad"
 if args["test"] is 1:
     while fps._numFrames < args["num_frames"]:
 	    # grab the frame from the threaded video stream and resize it
