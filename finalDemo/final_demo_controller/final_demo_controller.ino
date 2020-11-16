@@ -18,6 +18,7 @@
 
 // Comment out this line of code to only do the first-half of Demo2, i.e. rotate and move to within a foot.
 #define DEMO_2
+// #define DEBUG_MAIN
 
 // Setup the wheel encoder.
 Encoder rightWheel1(A_1_PIN, B_1_PIN); // right wheel is wheel #1
@@ -45,11 +46,11 @@ void setup() {
 
     // Move forward 1 foot
     // add_point_to_buffer(0.3048, PI/2);
-    pointQueue.enqueue({0.3448, PI/2}); // move right
-    pointQueue.enqueue({0.7096, -PI/2}); // move up
-    pointQueue.enqueue({0.8096, -PI/2}); // move left
-    pointQueue.enqueue({0.7096, -PI/2}); // move down
-    pointQueue.enqueue({0.3548, -PI/2}); // move right
+    // pointQueue.enqueue({0.3448, PI/2}); // move right
+    // pointQueue.enqueue({0.7096, -PI/2}); // move up
+    // pointQueue.enqueue({0.8096, -PI/2}); // move left
+    // pointQueue.enqueue({0.7096, -PI/2}); // move down
+    // pointQueue.enqueue({0.3548, -PI/2}); // move right
 }
 
 
@@ -225,7 +226,7 @@ void fromI2C(const size_t byteCount) {
  * @param Va      forward movement
  * @param deltaVa rotational movement
  */
-void setMotorsVoltage(double Va, double deltaVa) {
+void setMotorsVoltage(const double Va, const double deltaVa) {
     const double rightWheelVoltage = boundValue(calculateV1(Va, deltaVa), BATTERY_MAX_VOLTAGE, -1*BATTERY_MAX_VOLTAGE);
     const double leftWheelVoltage = boundValue(calculateV2(Va, deltaVa), BATTERY_MAX_VOLTAGE, -1*BATTERY_MAX_VOLTAGE);
 
@@ -261,7 +262,7 @@ double turnController(const double currentAngle, const double setAngle) {
 
     const double setVoltage = fromPController + fromIController;
 
-    return boundValue(setVoltage, NOMINAL_VOLTAGE, -NOMINAL_VOLTAGE);
+    return boundValue(setVoltage, NOMINAL_VOLTAGE, -1*NOMINAL_VOLTAGE);
 }
 
 /**
@@ -287,7 +288,7 @@ double radiusController(const double currentRadius, const double setRadius) {
 typedef enum { SPIN_TO_ARUCO, MOVE_TO_ARUCO, UPDATE_SET_POINT, SPIN_TO_SET_ANGLE, MOVE_TO_SET_RADIUS, SEND_H_TO_PI, IDLE } fsm_t;
 void loop() {
     const unsigned long start_time = millis();
-    static fsm_t state = UPDATE_SET_POINT; // Default state: spin until you see the aruco marker
+    static fsm_t state = SPIN_TO_ARUCO; // Default state: spin until you see the aruco marker
 
     static double piSetRadius = 0;
     static double piSetAngle = 0;
@@ -303,7 +304,7 @@ void loop() {
     const double currentRadius = WHEEL_RADIUS * (rightWheelPosition + leftWheelPosition) / 2;
 
     #ifdef DEBUG_MAIN
-        Serial.print("\t");
+        // Serial.print("\t");
         Serial.print(currentAngle);
         Serial.print("\t");
         Serial.print(currentRadius);
@@ -341,12 +342,15 @@ void loop() {
                     // If the current measurement is "close enough" to the previous measurement,
                     // then go to correct angle
                     if (receivedAngleFromPi) {
-                        if (withinEpsilon(previousMeasurement, angleFromPi, 0.05)) {
+                        if (withinEpsilon(previousMeasurement, angleFromPi, 0.001)) {
                             // Update the set angle w/ a small correction factor
                             // either add +0.1 if the pi has overshot and needs to correct
                             // or subtract 0.05 if the pi has undershot
                             // These values were found via tuning
-                            setAngle = angleFromPi + (angleFromPi < 0 ? 0.1 : -0.05);
+                            Serial.println("-----");
+                            Serial.println(angleFromPi);
+                            Serial.println("-----");
+                            setAngle = angleFromPi; // + (angleFromPi < 0 ? 0.1 : -0.05);
                             spin_aruco_state = CORRECT_ANGLE;
                             break;
                         } else {
@@ -359,6 +363,7 @@ void loop() {
                     // Since we're not moving, keep the encoder counts at 0
                     rightWheel1.write(0);
                     leftWheel2.write(0);
+                    turnControllerSum = 0;
 
                     setMotorsVoltage(0, 0);
                     break;
@@ -366,16 +371,22 @@ void loop() {
 
                 // Once the angle has stabalized, go to the correct angle
                 case CORRECT_ANGLE: {
+                    Serial.print(currentAngle);
+                    Serial.print("\t");
+                    Serial.print(setAngle);
+                    Serial.print("\t");
+
                     // If we get close enough, call it good and go to MOVE_TO_ARUCO.
                     if (withinEpsilon(setAngle, currentAngle, 0.01)) {
                         setMotorsVoltage(0, 0);
+                        // Serial.println("Moving to Aruco!");
                         state = MOVE_TO_ARUCO;
                         break;
                     }
 
                     const double deltaVa = turnController(currentAngle, setAngle);
                     const double Va = 0;
-                    setMotorsVoltage(deltaVa, Va);
+                    setMotorsVoltage(Va, deltaVa);
                     break;
                 }
 
@@ -391,7 +402,7 @@ void loop() {
         // Moves to within 1 foot of the aruco marker
         // ...which is really just enquing the point { distance, 0 } to the queue
         case MOVE_TO_ARUCO: {
-            const double distanceToMove = distanceFromMarker - 0.1;
+            const double distanceToMove = distanceFromMarker;
             Serial.print("Move to: ");
             Serial.println(distanceToMove);
 
@@ -400,9 +411,9 @@ void loop() {
 
             // Enqueue all the points around the box.
             #ifdef DEMO_2
-                pointQueue.enqueue({0.3448, PI/2}); // move right
-                pointQueue.enqueue({0.6496, -PI/2}); // move up
-                pointQueue.enqueue({0.8096, -PI/2}); // move left
+                pointQueue.enqueue({0.4048, PI/2}); // move right
+                pointQueue.enqueue({0.7096, -PI/2}); // move up
+                pointQueue.enqueue({0.7096, -PI/2}); // move left
                 pointQueue.enqueue({0.7096, -PI/2}); // move down
                 pointQueue.enqueue({0.3548, -PI/2}); // move right
             #endif
@@ -440,7 +451,7 @@ void loop() {
             const double setAngle = piSetAngle;
 
             // If we are "close enough" to the actual angle we need to face, then go to MOVE state
-            if (withinEpsilon(setAngle, currentAngle, 0.01)) {
+            if (withinEpsilon(setAngle, currentAngle, 0.05)) {
                 state = MOVE_TO_SET_RADIUS;
                 setMotorsVoltage(0, 0); // Turn off motors on transition to prevent over-turn.
                 delay(200);
