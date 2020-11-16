@@ -44,7 +44,12 @@ void setup() {
     Wire.onReceive(fromI2C);
 
     // Move forward 1 foot
-    add_point_to_buffer(0.3048*3.0, 0.0);
+    // add_point_to_buffer(0.3048, PI/2);
+    pointQueue.enqueue({0.3448, PI/2}); // move right
+    pointQueue.enqueue({0.7096, -PI/2}); // move up
+    pointQueue.enqueue({0.8096, -PI/2}); // move left
+    pointQueue.enqueue({0.7096, -PI/2}); // move down
+    pointQueue.enqueue({0.3548, -PI/2}); // move right
 }
 
 
@@ -57,6 +62,7 @@ double angleFromPi = 0.0;
 double distanceFromMarker = 0.0;
 bool receivedAngleFromPi = false;
 bool receivedDistanceFromPi = false;
+double turnControllerSum = 0;
 
 /**
  * This function is effectively an interrupt, and is called
@@ -249,12 +255,13 @@ void setMotorsVoltage(double Va, double deltaVa) {
  */
 double turnController(const double currentAngle, const double setAngle) {
     const double Kp = 15;
-    const double Ki = 220;
-    static double sum = 0;
+    const double Ki = 150;
     const double fromPController = pController(currentAngle, setAngle, Kp);
-    const double fromIController = iController(currentAngle, setAngle, sum, Ki);
+    const double fromIController = iController(currentAngle, setAngle, turnControllerSum, Ki);
 
-    return fromPController + fromIController;
+    const double setVoltage = fromPController + fromIController;
+
+    return boundValue(setVoltage, NOMINAL_VOLTAGE, -NOMINAL_VOLTAGE);
 }
 
 /**
@@ -421,6 +428,7 @@ void loop() {
             state = SPIN_TO_SET_ANGLE;
             rightWheel1.write(0);
             leftWheel2.write(0);
+            turnControllerSum = 0;
             break;
         }
 
@@ -432,10 +440,14 @@ void loop() {
             const double setAngle = piSetAngle;
 
             // If we are "close enough" to the actual angle we need to face, then go to MOVE state
-            if (withinEpsilon(setAngle, currentAngle, 0.02)) {
+            if (withinEpsilon(setAngle, currentAngle, 0.01)) {
                 state = MOVE_TO_SET_RADIUS;
                 setMotorsVoltage(0, 0); // Turn off motors on transition to prevent over-turn.
-                delay(100);
+                delay(200);
+                piSetAngle = 0.0;
+                rightWheel1.write(0);
+                leftWheel2.write(0);
+                turnControllerSum = 0;
                 break;
             }
 
@@ -458,10 +470,10 @@ void loop() {
             // This is technically a bang-bang controller. But I think it works.
             if (withinEpsilon(currentRadius, piSetRadius, 0.01)) {
                 setMotorsVoltage(0, 0);
+                delay(100);
                 state = UPDATE_SET_POINT;
                 rightWheel1.write(0);
                 leftWheel2.write(0);
-                delay(100);
                 break;
             }
 
