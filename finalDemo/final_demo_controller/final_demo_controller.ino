@@ -42,6 +42,9 @@ void setup() {
     // Setup I2C comms
     Wire.begin(0x8);
     Wire.onReceive(fromI2C);
+
+    // Move forward 1 foot
+    add_point_to_buffer(0.3048*3.0, 0.0);
 }
 
 
@@ -254,11 +257,30 @@ double turnController(const double currentAngle, const double setAngle) {
     return fromPController + fromIController;
 }
 
+/**
+ * The main controller for forward movement
+ * @param  currentRadius the current forward movement
+ * @param  setRadius     the set forward movement
+ * @return               the voltage value
+ */
+double radiusController(const double currentRadius, const double setRadius) {
+    const double Kp = 15;
+
+    const double Ki = 220;
+    static double sum = 0;
+
+    const double fromPController = pController(currentRadius, setRadius, Kp);
+    const double fromIController = iController(currentRadius, setRadius, sum, Ki);
+    const double setVoltage = fromPController + fromIController;
+
+    return (setVoltage > NOMINAL_VOLTAGE ? NOMINAL_VOLTAGE : setVoltage);
+}
+
 // The main loop() has a state machine, so this is the TYPEDEF for that machine.
 typedef enum { SPIN_TO_ARUCO, MOVE_TO_ARUCO, UPDATE_SET_POINT, SPIN_TO_SET_ANGLE, MOVE_TO_SET_RADIUS, SEND_H_TO_PI, IDLE } fsm_t;
 void loop() {
     const unsigned long start_time = millis();
-    static fsm_t state = SPIN_TO_ARUCO; // Default state: spin until you see the aruco marker
+    static fsm_t state = UPDATE_SET_POINT; // Default state: spin until you see the aruco marker
 
     static double piSetRadius = 0;
     static double piSetAngle = 0;
@@ -433,6 +455,7 @@ void loop() {
             const double setAngle = piSetAngle;
 
             // If we get close enough, head to the next point.
+            // This is technically a bang-bang controller. But I think it works.
             if (withinEpsilon(currentRadius, piSetRadius, 0.01)) {
                 setMotorsVoltage(0, 0);
                 state = UPDATE_SET_POINT;
@@ -445,7 +468,7 @@ void loop() {
             // We use a turn controller to ensure we don't drift from the setAngle
             // While we move at a nominal rate to the set point.
             const double deltaVa = turnController(currentAngle, setAngle); // pController(currentAngle, setAngle, Kp);
-            const double Va = NOMINAL_VOLTAGE;
+            const double Va = radiusController(currentRadius, piSetRadius); //;NOMINAL_VOLTAGE;
             setMotorsVoltage(Va, deltaVa);
             break;
         }
