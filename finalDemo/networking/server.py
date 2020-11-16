@@ -1,11 +1,14 @@
 import socket
+import requests
 
-UDP_IP = "138.67.201.108"
 UDP_PORT = 4210
+
+ip = requests.get('https://checkip.amazonaws.com').text.strip()
+print(ip)
 
 sock = socket.socket(socket.AF_INET, # Internet
                      socket.SOCK_DGRAM) # UDP
-sock.bind((UDP_IP, UDP_PORT))
+sock.bind((ip, UDP_PORT))
 
 i=0
 while True:
