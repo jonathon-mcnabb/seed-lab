@@ -32,3 +32,12 @@ bool has_another_point() {
 point get_next_point() {
     return pointQueue.dequeue();
 }
+
+/**
+ * Called on 'F', clears the point buffer
+ */
+void clear_point_queue() {
+    while (!pointQueue.isEmpty()) {
+        pointQueue.dequeue();
+    }
+}

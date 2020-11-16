@@ -12,6 +12,7 @@
 #include <ArduinoQueue.h> // for using a queue.
 #include <math.h>
 #include <Wire.h>
+#include <regex.h>
 
 #include "functions.h"
 #include "points_buffer.h"
@@ -22,6 +23,9 @@
 // Setup the wheel encoder.
 Encoder rightWheel1(A_1_PIN, B_1_PIN); // right wheel is wheel #1
 Encoder leftWheel2(A_2_PIN, B_2_PIN);
+regex_t compiled_regex;
+regmatch_t *matched_groups;
+size_t num_groups;
 
 void setup() {
     pinMode(MOTOR_1_PWM, OUTPUT);
@@ -42,6 +46,16 @@ void setup() {
     // Setup I2C comms
     Wire.begin(0x8);
     Wire.onReceive(fromI2C);
+
+    // Setup the regular expression matcher
+    if (regcomp(&compiled_regex, "(\((\d+.\d+),(\d+.\d+)\))", REG_EXTENDED) != 0) {
+        Serial.print("Regular expression compile failed! Error message: ");
+        Serial.println();
+    }
+
+    // To build the array of matched groups, we need to know the number.
+    num_groups = compiled_regex.re_nsub + 1;
+    matched_groups = malloc(num_groups * sizeof(regmatch_t));
 }
 
 
@@ -63,7 +77,7 @@ bool receivedDistanceFromPi = false;
 void fromI2C(const size_t byteCount) {
     static char buffer[64];
     static size_t i = 0;
-    static boolean seenAnAorD = false;
+    static boolean seenAStartBit = false;
     boolean parseNumber = false;
 
     // Parse all data from the Wire, until we hit a stop point
@@ -71,16 +85,22 @@ void fromI2C(const size_t byteCount) {
         char c = Wire.read();
         Serial.print(c);
 
+        // 'F' means 'Flush' the buffer
+        if (c == 'F') {
+            clear_point_queue();
+            continue;
+        }
+
         // 'A' and 'D' are the 'start bits'
         // these also determine what's been sent: angle, or distance info
-        if ((c != 'A' && c != 'D') && !seenAnAorD)
+        if ((c != 'A' && c != 'D' && c != 'P') && !seenAStartBit)
             continue;
 
-        seenAnAorD = true;
+        seenAStartBit = true;
 
         // 'S' is the 'stop' bit
         if (c == 'S') {
-            seenAnAorD = false;
+            seenAStartBit = false;
             parseNumber = true;
             break;
         }
@@ -117,6 +137,40 @@ void fromI2C(const size_t byteCount) {
                 receivedDistanceFromPi = true;
                 distanceFromMarker = parsedDouble;
                 break;
+
+            // Parse the points
+            case 'P':
+                while (true) {
+                    int result = regexec(&regex, buffer+1, num_groups, matched_groups, 0);
+                }
+
+                // DFA for the regular expression: \((\d+.\d+),(\d+.\d+)\)
+                // typedef enum {MATCH_LEFT, MATCH_UNTIL_COMMA, MATCH_UNTIL_RIGHT} regex_fsm_t;
+                // regex_fsm_t regex_state = MATCH_LEFT;
+                // bool matchError = false;
+                // size_t matchIndex = 1; // Skip the 'P'
+                //
+                //
+                // while (buffer[matchIndex] != '0' && !matchError) {
+                //     switch (regex_state) {
+                //         // Match '(' then move on else error
+                //         case MATCH_LEFT: {
+                //             if (buffer[matchIndex] == '(') {
+                //                 regex_state = MATCH_UNTIL_COMMA;
+                //                 matchIndex ++;
+                //             } else {
+                //                 matchError = true;
+                //             }
+                //
+                //             break;
+                //         }
+                //
+                //         // Track the indices until we get to a ',', then match
+                //         case
+                //     }
+                // }
+
+
         }
 
         i = 0;
