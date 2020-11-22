@@ -138,6 +138,8 @@ void fromI2C(const size_t byteCount) {
             // Parse the points
             case 'P':
                 // DFA for the regular expression: \((\d+.\d+),(\d+.\d+)\)
+                // P(radius,theta)(radius,theta)(radius,theta)S
+                // F
                 typedef enum {MATCH_LEFT, MATCH_UNTIL_COMMA, MATCH_UNTIL_RIGHT} regex_fsm_t;
                 regex_fsm_t regex_state = MATCH_LEFT;
                 bool matchError = false;
@@ -329,7 +331,9 @@ void loop() {
                         break;
                     }
 
-                    const double deltaVa = 4;
+                    Serial.print("NOMINAL_SPIN\r\n");
+
+                    const double deltaVa = 3;
                     const double Va = 0;
                     setMotorsVoltage(Va, deltaVa);
                     break;
@@ -338,6 +342,8 @@ void loop() {
                 // Once we've received a single reading, halt and wait for the measurement to stabalize
                 case WAIT_FOR_ANGLE_TO_STABALIZE: {
                     static double previousMeasurement = 10.0;
+
+                    Serial.print("WAIT_FOR_ANGLE_TO_STABALIZE\r\n");
 
                     // If the current measurement is "close enough" to the previous measurement,
                     // then go to correct angle
@@ -371,10 +377,12 @@ void loop() {
 
                 // Once the angle has stabalized, go to the correct angle
                 case CORRECT_ANGLE: {
-                    Serial.print(currentAngle);
-                    Serial.print("\t");
-                    Serial.print(setAngle);
-                    Serial.print("\t");
+                    // Serial.print(currentAngle);
+                    // Serial.print("\t");
+                    // Serial.print(setAngle);
+                    // Serial.print("\t");
+
+                    Serial.println("CORRECT_ANGLE");
 
                     // If we get close enough, call it good and go to MOVE_TO_ARUCO.
                     if (withinEpsilon(setAngle, currentAngle, 0.01)) {
@@ -501,6 +509,7 @@ void loop() {
          */
         case SEND_H_TO_PI: {
             // TODO: Send the H
+            Wire.write('H');
             state = IDLE;
             setMotorsVoltage(0, 0);
             break;
